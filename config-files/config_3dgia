@@ -617,7 +617,7 @@
   filename_sealevel_record_config             = 'name_of_file.dat'               ! Name of a file containing a sealevel record (in years)
   sealevel_record_length_config               = 1
 
-  choice_GIA_model_config                     = 'ELRA'                           ! Can be "none", "ELRA", or "SELEN"
+  choice_GIA_model_config                     = '3DGIA'                           ! Can be "none", "ELRA", "SELEN", or 3DGIA
   dx_GIA_config                               = 100000.0                         ! Horizontal resolution of the square grid used for the GIA model
   ELRA_lithosphere_flex_rigidity_config       = 1.0E+25                          ! Lithospheric flexural rigidity [kg m^2 s^-2]
   ELRA_bedrock_relaxation_time_config         = 3000.0                           ! Relaxation time for bedrock adjustment [yr]
@@ -674,7 +674,7 @@
   help_field_19_config                        = 'SMB_year'
   help_field_20_config                        = 'SL'
   help_field_21_config                        = 'dHb'
-  help_field_22_config                        = 'none'
+  help_field_22_config                        = 'relative_surface_load'
   help_field_23_config                        = 'none'
   help_field_24_config                        = 'none'
   help_field_25_config                        = 'none'

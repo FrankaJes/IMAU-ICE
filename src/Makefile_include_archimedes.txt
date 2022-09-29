@@ -1,0 +1,25 @@
+# Compiler:
+  F90 = mpifort
+
+# Path to NetCDF:
+  NETCDF_DIR = /usr/local
+
+# Path to LAPACK:
+  LAPACK_DIR = /usr
+  
+# Path to PETSc:
+  PETSC_DIR  =/home/caroline/projects/petsc/
+  PETSC_ARCH = arch-linux-c-debug
+
+# Compiler flags:
+  COMPILER_FLAGS_BASIC    = -O3 -J${MOD_PATH} -Wall -ffree-line-length-none -cpp -fimplicit-none
+  COMPILER_FLAGS_CHECK    = -fcheck=all -fbacktrace
+
+  F90FLAGS                = ${COMPILER_FLAGS_BASIC} ${COMPILER_FLAGS_CHECK} -I$(NETCDF_DIR)/include -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+
+# Linking flags of libaries:
+  LDFLAGS                 = -L${NETCDF_DIR}/lib -lnetcdf -lnetcdff -L${LAPACK_DIR}/lib64 -llapack -lpthread -Wl,-rpath=${PETSC_DIR}/${PETSC_ARCH}/lib ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so
+
+# anice@archimedes: LDFLAGS = -lz -L$(MYLIB) -lnetcdff -lnetcdf -lblas -llapack -lpthread
+# previous attempt: LDFLAGS = -lz -L/usr/local/lib -lnetcdff -lnetcdf -lblas -llapack -lpthread -lmpi_mpifh 
+

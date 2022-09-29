@@ -321,6 +321,21 @@ MODULE data_types_module
     REAL(dp), DIMENSION(:,:  ), POINTER     :: surface_load_rel_ext
     REAL(dp), DIMENSION(:,:  ), POINTER     :: dHb_eq
     INTEGER :: wflex_prof_rad, wflex_prof, wsurface_load_topo, wsurface_load, wsurface_load_rel, wsurface_load_rel_ext, wdHb_eq
+    
+    ! 3D GIA model (CvC)
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: ocean_depth_3DGIA
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: total_surface_load
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: relative_surface_load
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: Hs_float_for3DGIA
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: Hi_load
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: dHb_3D
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: reference_surface_load
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: Initial_ice_load
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: mask_ref
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: ocean_depth_ref
+
+    INTEGER :: wdHb_3D, wreference_surface_load ,wInitial_ice_load, wmask_ref, wocean_depth_ref
+    INTEGER :: wocean_depth_3DGIA, wtotal_surface_load, wrelative_surface_load, wHs_float_for3DGIA, wHi_load                        
 
   END TYPE type_ice_model
 

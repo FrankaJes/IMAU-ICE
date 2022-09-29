@@ -521,6 +521,16 @@ CONTAINS
     ELSEIF (field_name == 'PICO_boxes') THEN
       CALL write_data_to_file_int_2D( ncid, nx, ny,     id_var,              region%BMB%PICO_k, (/ 1, 1,   ti /))
 
+    ! Some quantities that can be provided as input for an offline 3D GIA model
+    ELSEIF (C%choice_GIA_model == '3DGIA') THEN !CvC  
+
+      IF (field_name == 'reference_surface_load') THEN
+        CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%ice%reference_surface_load, (/1, 1,   ti /))
+      ELSEIF (field_name == 'total_surface_load') THEN
+        CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%ice%total_surface_load, (/1, 1,   ti /))
+      ELSEIF (field_name == 'relative_surface_load') THEN
+        CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%ice%relative_surface_load, (/1, 1,   ti /))
+      END IF
 
     ELSE
       CALL crash('unknown help field "' // TRIM(field_name) // '"!')
@@ -1561,6 +1571,15 @@ CONTAINS
     ELSEIF (field_name == 'PICO_boxes') THEN
       CALL create_int_var(    region%help_fields%ncid, 'PICO_boxes',               [x, y,    t], id_Var, long_name='PICO ocean boxes')
 
+    ! Some quantities that can be provided as input for an offline 3D GIA model !CvC  
+    ELSEIF (C%choice_GIA_model == '3DGIA') THEN 
+      IF (field_name == 'reference_surface_load') THEN
+        CALL create_int_var(    region%help_fields%ncid, 'reference_surface_load',   [x, y,    t], id_Var, long_name='reference_surface_load', units='kg m-2')
+      ELSEIF (field_name == 'total_surface_load') THEN
+        CALL create_int_var(    region%help_fields%ncid, 'total_surface_load',       [x, y,    t], id_Var, long_name='Total surface load', units='kg m-2')
+      ELSEIF (field_name == 'relative_surface_load') THEN
+        CALL create_int_var(    region%help_fields%ncid, 'relative_surface_load',    [x, y,    t], id_Var, long_name='Relative surface load', units='kg m-2')   
+      END IF   
     ELSE
       CALL crash('unknown field name "' // TRIM(field_name) // '"!')
     END IF
