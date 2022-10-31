@@ -127,12 +127,12 @@ CONTAINS
     DO i = region%grid%i1, region%grid%i2
     DO j = 1, region%grid%ny
 
-      IF ( region%SMB%SMB_year( j,i) > 0._dp ) THEN
+      IF ( region%SMB%SMB( j,i) > 0._dp ) THEN
         ! Surface accumulation has the isotope content of precipitation
-        region%ice%MB_iso( j,i) = region%ice%MB_iso( j,i) + region%SMB%SMB_year( j,i) * region%ice%IsoSurf( j,i) * region%grid%dx * region%grid%dx    ! (applied MB) mass gain, so d18O from precipitation
+        region%ice%MB_iso( j,i) = region%ice%MB_iso( j,i) + region%SMB%SMB( j,i) * region%ice%IsoSurf( j,i) * region%grid%dx * region%grid%dx    ! (applied MB) mass gain, so d18O from precipitation
       ELSE
         ! Surface melt has the isotope content of the ice itself
-        region%ice%MB_iso( j,i) = region%ice%MB_iso( j,i) + region%SMB%SMB_year( j,i) * region%ice%IsoIce(  j,i) * region%grid%dx * region%grid%dx    ! (applied MB) mass loss, so d18O from ice
+        region%ice%MB_iso( j,i) = region%ice%MB_iso( j,i) + region%SMB%SMB( j,i) * region%ice%IsoIce(  j,i) * region%grid%dx * region%grid%dx    ! (applied MB) mass loss, so d18O from ice
       END IF
 
       ! Both basal melt and basal freezing have the isotope content of the ice itself (the latter

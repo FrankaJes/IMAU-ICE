@@ -11,8 +11,10 @@ MODULE SMB_module
                                              allocate_shared_int_3D, allocate_shared_dp_3D, &
                                              deallocate_shared
   USE data_types_module,               ONLY: type_grid, type_ice_model, type_SMB_model, type_climate_model, &
-                                             type_restart_data, type_climate_model_direct_SMB
-  USE netcdf_module,                   ONLY: debug, write_to_debug_file, inquire_restart_file_SMB, read_restart_file_SMB
+                                             type_restart_data, type_SMB_model_IMAU_ITM
+  USE data_types_netcdf_module,        ONLY: type_netcdf_SMB_snapshot
+  USE netcdf_module,                   ONLY: debug, write_to_debug_file, inquire_restart_file_SMB, read_restart_file_SMB, &
+                                             read_SMB_snapshot_file
   USE utilities_module,                ONLY: check_for_NaN_dp_1D,  check_for_NaN_dp_2D,  check_for_NaN_dp_3D, &
                                              check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
                                              map_square_to_square_cons_2nd_order_2D, map_square_to_square_cons_2nd_order_3D, &
@@ -32,7 +34,7 @@ CONTAINS
 ! == The main routines that should be called from the main ice model/program
 ! ==========================================================================
 
-  SUBROUTINE run_SMB_model( grid, ice, climate, time, SMB, mask_noice)
+  SUBROUTINE run_SMB_model( grid, ice, climate, time, SMB, mask_noice, region_name)
     ! Run the selected SMB model.
 
     IMPLICIT NONE
@@ -44,6 +46,7 @@ CONTAINS
     REAL(dp),                             INTENT(IN)    :: time
     TYPE(type_SMB_model),                 INTENT(INOUT) :: SMB
     INTEGER,  DIMENSION(:,:  ),           INTENT(IN)    :: mask_noice
+    CHARACTER(LEN=3),                     INTENT(IN)    :: region_name
 
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                       :: routine_name = 'run_SMB_model'
@@ -58,9 +61,9 @@ CONTAINS
       DO i = grid%i1, grid%i2
       DO j = 1, grid%ny
         IF (mask_noice( j,i) == 0) THEN
-          SMB%SMB_year( j,i) = C%SMB_uniform
+          SMB%SMB( j,i) = C%SMB_uniform
         ELSE
-          SMB%SMB_year( j,i) = 0._dp
+          SMB%SMB( j,i) = 0._dp
         END IF
       END DO
       END DO
@@ -71,26 +74,49 @@ CONTAINS
 
       CALL run_SMB_model_idealised( grid, SMB, time, mask_noice)
 
+    ELSEIF (C%choice_SMB_model == 'direct') THEN
+      ! Use a directly prescribed SMB
+
+      CALL run_SMB_model_direct( grid, SMB, time, mask_noice, region_name)
+
+    ELSEIF (C%choice_SMB_model == 'ISMIP-style') THEN
+      ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
+
+      CALL run_SMB_model_ISMIP_style( grid, ice, climate, SMB, time)
+
     ELSEIF (C%choice_SMB_model == 'IMAU-ITM') THEN
       ! Run the IMAU-ITM SMB model
 
-      CALL run_SMB_model_IMAUITM( grid, ice, climate, SMB, mask_noice)
+      CALL run_SMB_model_IMAUITM( grid, ice, climate, SMB%IMAU_ITM, mask_noice)
+
+      ! Copy final SMB
+      DO i = grid%i1, grid%i2
+      DO j = 1, grid%ny
+        IF (mask_noice( j,i) == 0) THEN
+          SMB%SMB( j,i) = SMB%IMAU_ITM%SMB_year( j,i)
+        ELSE
+          SMB%SMB( j,i) = 0._dp
+        END IF
+      END DO
+      END DO
+      CALL sync
 
     ELSEIF (C%choice_SMB_model == 'IMAU-ITM_wrongrefreezing') THEN
       ! Run the IMAU-ITM SMB model with the old wrong refreezing parameterisation from ANICE
 
-      CALL run_SMB_model_IMAUITM_wrongrefreezing( grid, ice, climate, SMB, mask_noice)
+      CALL run_SMB_model_IMAUITM_wrongrefreezing( grid, ice, climate, SMB%IMAU_ITM, mask_noice)
 
-    ELSEIF (C%choice_SMB_model == 'direct_global' .OR. &
-            C%choice_SMB_model == 'direct_regional') THEN
-      ! Use a directly prescribed global/regional SMB
-
-      CALL run_SMB_model_direct( grid, climate%direct_SMB, SMB, time, mask_noice)
-
-    ELSEIF (C%choice_SMB_model == 'ISMIP_style') THEN
-      ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
-
-      CALL run_SMB_model_ISMIP_style( grid, ice, climate, SMB, time)
+      ! Copy final SMB
+      DO i = grid%i1, grid%i2
+      DO j = 1, grid%ny
+        IF (mask_noice( j,i) == 0) THEN
+          SMB%SMB( j,i) = SMB%IMAU_ITM%SMB_year( j,i)
+        ELSE
+          SMB%SMB( j,i) = 0._dp
+        END IF
+      END DO
+      END DO
+      CALL sync
 
     ELSE
       CALL crash('unknown choice_SMB_model "' // TRIM( C%choice_SMB_model) // '"!')
@@ -119,21 +145,32 @@ CONTAINS
 
     IF (par%master) WRITE (0,*) '  Initialising regional SMB model "', TRIM(C%choice_SMB_model), '"...'
 
+    ! Always allocate memory for the applied SMB
+    CALL allocate_shared_dp_2D( grid%ny, grid%nx, SMB%SMB, SMB%wSMB)
+
     ! Allocate shared memory
     IF     (C%choice_SMB_model == 'uniform' .OR. &
-            C%choice_SMB_model == 'idealised' .OR. &
-            C%choice_SMB_model == 'direct_global' .OR. &
-            C%choice_SMB_model == 'direct_regional' .OR. &
-            C%choice_SMB_model == 'ISMIP_style') THEN
-      ! Only need yearly total SMB in these cases
+            C%choice_SMB_model == 'idealised') THEN
+      ! No need to initialise anything other than the applied SMB
 
-      CALL allocate_shared_dp_2D( grid%ny, grid%nx, SMB%SMB_year, SMB%wSMB_year)
+    ELSEIF (C%choice_SMB_model == 'direct') THEN
+      ! Use a directly prescribed SMB
+
+      CALL initialise_SMB_model_direct( grid, SMB)
+
+    ELSEIF( C%choice_SMB_model == 'ISMIP-style') THEN
+      ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
+
+      ! NOTE: only works when choice_climate_model is also set to 'ISMIP-style'!
+      IF (.NOT. C%choice_climate_model == 'ISMIP-style') CALL crash('choice_SMB_model "ISMIP-style" only works when choice_climate_model is also set to "ISMIP-style"!')
+
+      ! No need to initialise anything other than the applied SMB
 
     ELSEIF (C%choice_SMB_model == 'IMAU-ITM' .OR. &
             C%choice_SMB_model == 'IMAU-ITM_wrongrefreezing') THEN
       ! Allocate memory and initialise some fields for the IMAU-ITM SMB model
 
-      CALL initialise_SMB_model_IMAU_ITM( grid, ice, SMB, region_name)
+      CALL initialise_SMB_model_IMAU_ITM( grid, ice, SMB%IMAU_ITM, region_name)
 
     ELSE
       CALL crash('unknown choice_SMB_model "' // TRIM( C%choice_SMB_model) // '"!')
@@ -247,9 +284,9 @@ CONTAINS
     DO j = 1, grid%ny
       IF (mask_noice( j,i) == 0) THEN
         dist = SQRT(grid%x(i)**2+grid%y(j)**2)
-        SMB%SMB_year( j,i) = MIN( M_max, S_b * (E - dist))
+        SMB%SMB( j,i) = MIN( M_max, S_b * (E - dist))
       ELSE
-        SMB%SMB_year( j,i) = 0._dp
+        SMB%SMB( j,i) = 0._dp
       END IF
     END DO
     END DO
@@ -279,9 +316,9 @@ CONTAINS
     DO i = grid%i1, grid%i2
     DO j = 1, grid%ny
       IF (mask_noice( j,i) == 0) THEN
-        SMB%SMB_year( j,i) = Bueler_solution_MB( grid%x(i), grid%y(j), time)
+        SMB%SMB( j,i) = Bueler_solution_MB( grid%x(i), grid%y(j), time)
       ELSE
-        SMB%SMB_year( j,i) = 0._dp
+        SMB%SMB( j,i) = 0._dp
       END IF
     END DO
     END DO
@@ -291,6 +328,258 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE run_SMB_model_idealised_Bueler
+
+! == Directly prescribed SMB
+! ==========================
+
+  SUBROUTINE run_SMB_model_direct( grid, SMB, time, mask_noice, region_name)
+    ! Run the selected SMB model: direct SMB forcing.
+
+    IMPLICIT NONE
+
+    ! In/output variables
+    TYPE(type_grid),                     INTENT(IN)    :: grid
+    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
+    REAL(dp),                            INTENT(IN)    :: time
+    INTEGER,  DIMENSION(:,:  ),          INTENT(IN)    :: mask_noice
+    CHARACTER(LEN=3),                    INTENT(IN)    :: region_name
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_SMB_model_direct'
+    REAL(dp)                                           :: wt0, wt1
+    INTEGER                                            :: i,j
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! If needed, update the two timeframes
+    IF (time < SMB%direct%t0 .OR. time > SMB%direct%t1) THEN
+      CALL sync
+      CALL run_SMB_model_direct_update_timeframes( grid, SMB, time, region_name)
+    END IF
+
+    ! Interpolate the two timeframes in time
+    wt0 = (SMB%direct%t1 - time) / (SMB%direct%t1 - SMB%direct%t0)
+    wt1 = 1._dp - wt0
+
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+      IF (mask_noice( j,i) == 0) THEN
+        SMB%SMB( j,i) = (wt0 * SMB%direct%timeframe0%SMB( j,i)) + (wt1 * SMB%direct%timeframe1%SMB( j,i))
+      ELSE
+        SMB%SMB( j,i) = 0._dp
+      END IF
+    END DO
+    END DO
+    CALL sync
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE run_SMB_model_direct
+  SUBROUTINE run_SMB_model_direct_update_timeframes( grid, SMB, time, region_name)
+    ! Run the selected SMB model: direct SMB forcing.
+
+    USE netcdf_module, ONLY: open_netcdf_file, inquire_dim, inquire_single_or_double_var, handle_error, close_netcdf_file
+    USE netcdf, ONLY: nf90_get_var
+
+    IMPLICIT NONE
+
+    ! In/output variables
+    TYPE(type_grid),                     INTENT(IN)    :: grid
+    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
+    REAL(dp),                            INTENT(IN)    :: time
+    CHARACTER(LEN=3),                    INTENT(IN)    :: region_name
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_SMB_model_direct_update_timeframes'
+    TYPE(type_netcdf_SMB_snapshot)                     :: netcdf
+    INTEGER                                            :: ntime_from_file
+    REAL(dp), DIMENSION(:    ), ALLOCATABLE            ::  time_from_file
+    INTEGER                                            :: ti
+    REAL(dp), DIMENSION(:    ), POINTER                :: x_raw, y_raw
+    INTEGER                                            :: wx_raw, wy_raw, nx_raw, ny_raw
+    REAL(dp), DIMENSION(:,:  ), POINTER                ::  SMB0_raw,  SMB1_raw
+    INTEGER                                            :: wSMB0_raw, wSMB1_raw
+    REAL(dp), DIMENSION(:,:  ), POINTER                ::  T2m0_raw,  T2m1_raw,  T2m0,  T2m1
+    INTEGER                                            :: wT2m0_raw, wT2m1_raw, wT2m0, wT2m1
+    INTEGER                                            :: i,j
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Get filename
+    IF     (region_name == 'NAM') THEN
+      netcdf%filename   = C%filename_direct_SMB_NAM
+    ELSEIF (region_name == 'EAS') THEN
+      netcdf%filename   = C%filename_direct_SMB_EAS
+    ELSEIF (region_name == 'GRL') THEN
+      netcdf%filename   = C%filename_direct_SMB_GRL
+    ELSEIF (region_name == 'ANT') THEN
+      netcdf%filename   = C%filename_direct_SMB_ANT
+    ELSE
+      CALL crash('unknown model region "' // TRIM( region_name) // '"!')
+    END IF
+
+    ! Find times of two timeframes
+    IF (par%master) THEN
+
+      ! Open the netcdf file
+      CALL open_netcdf_file( TRIM( netcdf%filename), netcdf%ncid)
+
+      ! Read time from netcdf file
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_time, ntime_from_file, netcdf%id_dim_time)
+
+      CALL inquire_single_or_double_var( netcdf%ncid, netcdf%name_var_time, [netcdf%id_dim_time], netcdf%id_var_time)
+
+      ALLOCATE( time_from_file( ntime_from_file))
+
+      CALL handle_error( nf90_get_var( netcdf%ncid, netcdf%id_var_time, time_from_file))
+
+      CALL close_netcdf_file( netcdf%ncid)
+
+      ti = 1
+      DO WHILE (time_from_file( ti) < time)
+        ti = ti + 1
+      END DO
+      ti = MIN( ntime_from_file-1, MAX( 1, ti - 1))
+      SMB%direct%t0 = time_from_file( ti)
+
+      ti = ntime_from_file
+      DO WHILE (time_from_file( ti) > time)
+        ti = ti - 1
+      END DO
+      ti = MIN( ntime_from_file  , MAX( 2, ti + 1))
+      SMB%direct%t1 = time_from_file( ti)
+
+      DEALLOCATE( time_from_file)
+
+    END IF ! IF (par%master) THEN
+    CALL MPI_BCAST( SMB%direct%t0, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+    CALL MPI_BCAST( SMB%direct%t1, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+
+    ! Read both snapshots
+    CALL read_SMB_snapshot_file( netcdf, SMB%direct%t0, nx_raw, x_raw, wx_raw, ny_raw, y_raw, wy_raw, SMB0_raw, wSMB0_raw, T2m0_raw, wT2m0_raw)
+    CALL deallocate_shared( wx_raw)
+    CALL deallocate_shared( wy_raw)
+    CALL read_SMB_snapshot_file( netcdf, SMB%direct%t1, nx_raw, x_raw, wx_raw, ny_raw, y_raw, wy_raw, SMB1_raw, wSMB1_raw, T2m1_raw, wT2m1_raw)
+
+    ! Tranpose data to go from [i,j] to [j,i] indexing
+    CALL transpose_dp_2D( SMB0_raw, wSMB0_raw)
+    CALL transpose_dp_2D( SMB1_raw, wSMB1_raw)
+    CALL transpose_dp_2D( T2m0_raw, wT2m0_raw)
+    CALL transpose_dp_2D( T2m1_raw, wT2m1_raw)
+
+    ! Map data to model grid
+    CALL allocate_shared_dp_2D( grid%ny, grid%nx, T2m0, wT2m0)
+    CALL allocate_shared_dp_2D( grid%ny, grid%nx, T2m1, wT2m1)
+    CALL map_square_to_square_cons_2nd_order_2D( nx_raw, ny_raw, x_raw, y_raw, grid%nx, grid%ny, grid%x, grid%y, SMB0_raw, SMB%direct%timeframe0%SMB)
+    CALL map_square_to_square_cons_2nd_order_2D( nx_raw, ny_raw, x_raw, y_raw, grid%nx, grid%ny, grid%x, grid%y, SMB1_raw, SMB%direct%timeframe1%SMB)
+    CALL map_square_to_square_cons_2nd_order_2D( nx_raw, ny_raw, x_raw, y_raw, grid%nx, grid%ny, grid%x, grid%y, T2m0_raw, T2m0)
+    CALL map_square_to_square_cons_2nd_order_2D( nx_raw, ny_raw, x_raw, y_raw, grid%nx, grid%ny, grid%x, grid%y, T2m1_raw, T2m1)
+
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+      SMB%direct%timeframe0%T2m( :,j,i) = T2m0( j,i)
+      SMB%direct%timeframe1%T2m( :,j,i) = T2m1( j,i)
+    END DO
+    END DO
+    CALL sync
+
+    ! Clean up after yourself
+    CALL deallocate_shared( wx_raw)
+    CALL deallocate_shared( wy_raw)
+    CALL deallocate_shared( wSMB0_raw)
+    CALL deallocate_shared( wSMB1_raw)
+    CALL deallocate_shared( wT2m0_raw)
+    CALL deallocate_shared( wT2m1_raw)
+    CALL deallocate_shared( wT2m0)
+    CALL deallocate_shared( wT2m1)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE run_SMB_model_direct_update_timeframes
+  SUBROUTINE initialise_SMB_model_direct( grid, SMB)
+    ! Allocate memory for the data fields of the SMB model.
+
+    IMPLICIT NONE
+
+    ! In/output variables
+    TYPE(type_grid),                     INTENT(IN)    :: grid
+    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'initialise_SMB_model_direct'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Set timeframes timestamps to impossible values, so that the first call to run_climate_model_direct
+    ! is guaranteed to first read two new timeframes from the NetCDF file
+    SMB%direct%t0 = C%start_time_of_run - 100._dp
+    SMB%direct%t1 = C%start_time_of_run - 90._dp
+
+    ! Allocate shared memory
+    CALL allocate_shared_dp_2D(     grid%ny, grid%nx, SMB%direct%timeframe0%SMB, SMB%direct%timeframe0%wSMB)
+    CALL allocate_shared_dp_2D(     grid%ny, grid%nx, SMB%direct%timeframe1%SMB, SMB%direct%timeframe1%wSMB)
+    CALL allocate_shared_dp_3D( 12, grid%ny, grid%nx, SMB%direct%timeframe0%T2m, SMB%direct%timeframe0%wT2m)
+    CALL allocate_shared_dp_3D( 12, grid%ny, grid%nx, SMB%direct%timeframe1%T2m, SMB%direct%timeframe1%wT2m)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE initialise_SMB_model_direct
+
+! == ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
+! =================================================================
+
+  SUBROUTINE run_SMB_model_ISMIP_style( grid, ice, climate, SMB, time)
+    ! Run the selected SMB model
+    !
+    ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
+
+    IMPLICIT NONE
+
+    ! In/output variables
+    TYPE(type_grid),                     INTENT(IN)    :: grid
+    TYPE(type_ice_model),                INTENT(IN)    :: ice
+    TYPE(type_climate_model),            INTENT(IN)    :: climate
+    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
+    REAL(dp),                            INTENT(IN)    :: time
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_SMB_model_ISMIP_style'
+    REAL(dp)                                           :: wt0, wt1
+    INTEGER                                            :: i,j
+    REAL(dp)                                           :: aSMB, dSMBdz, dz
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Calculate interpolation weights for interpolating the two timeframes in time
+    wt0 = (climate%ISMIP_style%t1 - time) / (climate%ISMIP_style%t1 - climate%ISMIP_style%t0)
+    wt1 = 1._dp - wt0
+
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+
+      ! Interpolate the two timeframes in time
+      aSMB   = (wt0 * climate%ISMIP_style%timeframe0%aSMB(   j,i)) + (wt1 * climate%ISMIP_style%timeframe1%aSMB(   j,i))
+      dSMBdz = (wt0 * climate%ISMIP_style%timeframe0%dSMBdz( j,i)) + (wt1 * climate%ISMIP_style%timeframe1%dSMBdz( j,i))
+
+      ! Calculate the applied SMB
+      dz = ice%Hs_a( j,i) - climate%ISMIP_style%Hs_ref( j,i)
+      SMB%SMB( j,i) = climate%ISMIP_style%SMB_ref( j,i) + aSMB + dSMBdz * dz
+
+    END DO
+    END DO
+    CALL sync
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE run_SMB_model_ISMIP_style
 
 ! == The IMAU-ITM SMB model
 ! =========================
@@ -307,7 +596,7 @@ CONTAINS
     TYPE(type_grid),                      INTENT(IN)    :: grid
     TYPE(type_ice_model),                 INTENT(IN)    :: ice
     TYPE(type_climate_model),             INTENT(IN)    :: climate
-    TYPE(type_SMB_model),                 INTENT(INOUT) :: SMB
+    TYPE(type_SMB_model_IMAU_ITM),        INTENT(INOUT) :: SMB
     INTEGER,  DIMENSION(:,:  ),           INTENT(IN)    :: mask_noice
 
     ! Local variables:
@@ -431,7 +720,7 @@ CONTAINS
     TYPE(type_grid),                      INTENT(IN)    :: grid
     TYPE(type_ice_model),                 INTENT(IN)    :: ice
     TYPE(type_climate_model),             INTENT(IN)    :: climate
-    TYPE(type_SMB_model),                 INTENT(INOUT) :: SMB
+    TYPE(type_SMB_model_IMAU_ITM),        INTENT(INOUT) :: SMB
     INTEGER,  DIMENSION(:,:  ),           INTENT(IN)    :: mask_noice
 
     ! Local variables:
@@ -543,7 +832,7 @@ CONTAINS
     ! In/output variables
     TYPE(type_grid),                     INTENT(IN)    :: grid
     TYPE(type_ice_model),                INTENT(IN)    :: ice
-    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
+    TYPE(type_SMB_model_IMAU_ITM),       INTENT(INOUT) :: SMB
     CHARACTER(LEN=3),                    INTENT(IN)    :: region_name
 
     ! Local variables:
@@ -671,7 +960,7 @@ CONTAINS
 
     ! In/output variables
     TYPE(type_grid),                     INTENT(IN)    :: grid
-    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
+    TYPE(type_SMB_model_IMAU_ITM),       INTENT(INOUT) :: SMB
     CHARACTER(LEN=3),                    INTENT(IN)    :: region_name
 
     ! Local variables:
@@ -747,105 +1036,6 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE initialise_IMAU_ITM_firn_restart
-
-! == Directly prescribed global/regional SMB
-! ==========================================
-
-  SUBROUTINE run_SMB_model_direct( grid, direct_SMB, SMB, time, mask_noice)
-    ! Run the selected SMB model: direct global/regional SMB forcing.
-    !
-    ! NOTE: the whole business of reading the data from the NetCDF file and mapping
-    !       it to the model grid is handled by the climate_module!
-    ! NOTE ALSO: since the climate_module routines for the "direct_global" option
-    !       already map the results to the model grid (located in region%climate_matrix%SMB_direct),
-    !       in this routine here we can treat "direct_global" and "direct_regional" the same way
-
-    IMPLICIT NONE
-
-    ! In/output variables
-    TYPE(type_grid),                        INTENT(IN)    :: grid
-    TYPE(type_climate_model_direct_SMB),    INTENT(IN)    :: direct_SMB
-    TYPE(type_SMB_model),                   INTENT(INOUT) :: SMB
-    REAL(dp),                               INTENT(IN)    :: time
-    INTEGER,  DIMENSION(:,:  ),             INTENT(IN)    :: mask_noice
-
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_SMB_model_direct'
-    REAL(dp)                                           :: wt0, wt1
-    INTEGER                                            :: i,j
-
-    ! Add routine to path
-    CALL init_routine( routine_name)
-
-    ! Interpolate the two timeframes in time
-    wt0 = (direct_SMB%t1 - time) / (direct_SMB%t1 - direct_SMB%t0)
-    wt1 = 1._dp - wt0
-
-    DO i = grid%i1, grid%i2
-    DO j = 1, grid%ny
-      IF (mask_noice( j,i) == 0) THEN
-        SMB%SMB_year( j,i) = (wt0 * direct_SMB%timeframe0%SMB( j,i)) + (wt1 * direct_SMB%timeframe1%SMB( j,i))
-      ELSE
-        SMB%SMB_year( j,i) = 0._dp
-      END IF
-    END DO
-    END DO
-    CALL sync
-
-    ! Finalise routine path
-    CALL finalise_routine( routine_name)
-
-  END SUBROUTINE run_SMB_model_direct
-
-! == ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
-! =================================================================
-
-  SUBROUTINE run_SMB_model_ISMIP_style( grid, ice, climate, SMB, time)
-    ! Run the selected SMB model
-    !
-    ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
-
-    IMPLICIT NONE
-
-    ! In/output variables
-    TYPE(type_grid),                     INTENT(IN)    :: grid
-    TYPE(type_ice_model),                INTENT(IN)    :: ice
-    TYPE(type_climate_model),            INTENT(IN)    :: climate
-    TYPE(type_SMB_model),                INTENT(INOUT) :: SMB
-    REAL(dp),                            INTENT(IN)    :: time
-
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_SMB_model_ISMIP_style'
-    REAL(dp)                                           :: wt0, wt1
-    INTEGER                                            :: i,j
-    REAL(dp)                                           :: aSMB, dSMBdz, dz
-
-    ! Add routine to path
-    CALL init_routine( routine_name)
-
-    ! Calculate interpolation weights for interpolating the two timeframes in time
-    wt0 = (climate%ISMIP_style%t1 - time) / (climate%ISMIP_style%t1 - climate%ISMIP_style%t0)
-    wt1 = 1._dp - wt0
-
-    DO i = grid%i1, grid%i2
-    DO j = 1, grid%ny
-
-      ! Interpolate the two timeframes in time
-      aSMB   = (wt0 * climate%ISMIP_style%timeframe0%aSMB(   j,i)) + (wt1 * climate%ISMIP_style%timeframe1%aSMB(   j,i))
-      dSMBdz = (wt0 * climate%ISMIP_style%timeframe0%dSMBdz( j,i)) + (wt1 * climate%ISMIP_style%timeframe1%dSMBdz( j,i))
-
-      ! Calculate the applied SMB
-      dz = ice%Hs_a( j,i) - climate%ISMIP_style%Hs_ref( j,i)
-      SMB%SMB_year( j,i) = climate%ISMIP_style%SMB_ref( j,i) + aSMB + dSMBdz * dz
-
-    END DO
-    END DO
-    CALL sync
-
-    ! Finalise routine path
-    CALL finalise_routine( routine_name)
-
-  END SUBROUTINE run_SMB_model_ISMIP_style
 
 ! == Some generally useful tools
 ! ==============================

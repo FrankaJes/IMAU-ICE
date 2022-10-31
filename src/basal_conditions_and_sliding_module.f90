@@ -1471,6 +1471,11 @@ CONTAINS
 
       CALL update_bed_roughness_Berends2022( grid, ice, refgeo_PD, dt)
 
+    ELSEIF (C%choice_BIVgeo_method == 'Berends2022_noflowline') THEN
+      ! PIEP
+
+      CALL update_bed_roughness_Berends2022_noflowline( grid, ice, refgeo_PD, dt)
+
     ELSEIF (C%choice_BIVgeo_method == 'Bernales2017') THEN
       ! Update the bed roughness according to Bernales et al. (2017)
 
@@ -1736,7 +1741,7 @@ CONTAINS
     INTEGER                                            :: wmask
     REAL(dp), DIMENSION(:,:  ), POINTER                ::  dCdt
     INTEGER                                            :: wdCdt
-    REAL(dp), PARAMETER                                :: sigma = 500._dp
+    REAL(dp)                                           :: sigma
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -1749,18 +1754,19 @@ CONTAINS
     DO i = grid%i1, grid%i2
     DO j = 1, grid%ny
 
-      IF (ice%mask_sheet_a( j,i) == 1) THEN
-
-        mask( j,i) = 2
-
-        ! CISM+ inversion equation
-        dCdt( j,i) = -ice%phi_fric_a( j,i) / C%BIVgeo_CISMplus_tauc * &
-          ( C%BIVgeo_CISMplus_wH * (ice%Hi_a(        j,i) - refgeo_PD%Hi(           j,i)) / ( C%BIVgeo_CISMplus_H0) + &
-            C%BIVgeo_CISMplus_wu * (ice%uabs_surf_a( j,i) - ice%BIV_uabs_surf_target( j,i)) / (-C%BIVgeo_CISMplus_u0) )
-
-      ELSE
+      ! Obviously can only be done where there's (grounded) ice
+      IF (ice%mask_sheet_a( j,i) == 0 .OR. ice%mask_margin_a( j,i) == 1 .OR. ice%Hi_a( j,i) < 1._dp .OR. &
+          refgeo_PD%Hi( j,i) < 1._dp .OR. ice%BIV_uabs_surf_target( j,i) == 0._dp .OR. ice%mask_gl_a( j,i) == 1) THEN
         mask( j,i) = 1
+        CYCLE
+      ELSE
+        mask( j,i) = 2
       END IF
+
+      ! CISM+ inversion equation
+      dCdt( j,i) = -ice%phi_fric_a( j,i) / C%BIVgeo_CISMplus_tauc * &
+        ( C%BIVgeo_CISMplus_wH * (ice%Hi_a(        j,i) - refgeo_PD%Hi(           j,i)) / ( C%BIVgeo_CISMplus_H0) + &
+          C%BIVgeo_CISMplus_wu * (ice%uabs_surf_a( j,i) - ice%BIV_uabs_surf_target( j,i)) / (-C%BIVgeo_CISMplus_u0) )
 
     END DO
     END DO
@@ -1769,20 +1775,26 @@ CONTAINS
     ! Extrapolate new values outside the ice sheet
     CALL extrapolate_updated_bed_roughness( grid, mask, dCdt)
 
-    ! Apply regularisation
+    ! Update bed roughness (Berends et al. (2022), Eq. 9)
+
+    ! First regularisation step (function F1 in Berends et al. (2022), Eq. 9)
+    sigma = grid%dx / 1.5_dp
     CALL smooth_Gaussian_2D( grid, dCdt, sigma)
 
-    ! Update bed roughness
     DO i = grid%i1, grid%i2
     DO j = 1, grid%ny
-      ice%phi_fric_a( j,i) = MAX( 1E-6_dp, MIN( 30._dp, ice%phi_fric_a( j,i) + dCdt( j,i) * dt ))
+      ice%phi_fric_a( j,i) = MAX( C%BIVgeo_Berends2022_phimin, MIN( C%BIVgeo_Berends2022_phimax, ice%phi_fric_a( j,i) + dCdt( j,i) * dt ))
     END DO
     END DO
     CALL sync
 
+    ! Second regularisation step (function F2 in Berends et al. (2022), Eq. 9)
+    sigma = grid%dx / 4._dp
+    CALL smooth_Gaussian_2D( grid, ice%phi_fric_a, sigma)
+
     ! Clean up after yourself
-    CALL deallocate_shared( wdCdt)
     CALL deallocate_shared( wmask)
+    CALL deallocate_shared( wdCdt)
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)
@@ -1804,7 +1816,7 @@ CONTAINS
     REAL(dp),                            INTENT(IN)    :: dt
 
     ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'update_bed_roughness_Tijn'
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'update_bed_roughness_Berends2022'
     INTEGER,  DIMENSION(:,:  ), POINTER                ::  mask
     INTEGER                                            :: wmask
     REAL(dp), DIMENSION(:,:  ), POINTER                ::  dphi_dt
@@ -1964,6 +1976,189 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE update_bed_roughness_Berends2022
+  SUBROUTINE update_bed_roughness_Berends2022_noflowline( grid, ice, refgeo_PD, dt)
+    ! The geometry+velocity-based inversion from Berends et al. (2022)
+    ! Here, the rate of change of the bed roughness is calculated
+    ! by integrating the difference between modelled vs. target geometry+velocity
+    ! along the flowline (both upstream and downstream).
+    !
+    ! NOTE: demo version where the whole flowline-averaging business is turned off
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_grid),                     INTENT(IN)    :: grid
+    TYPE(type_ice_model),                INTENT(INOUT) :: ice
+    TYPE(type_reference_geometry),       INTENT(IN)    :: refgeo_PD
+    REAL(dp),                            INTENT(IN)    :: dt
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'update_bed_roughness_Berends2022_noflowline'
+    INTEGER,  DIMENSION(:,:  ), POINTER                ::  mask
+    INTEGER                                            :: wmask
+    REAL(dp), DIMENSION(:,:  ), POINTER                ::  dphi_dt
+    INTEGER                                            :: wdphi_dt
+    REAL(dp), PARAMETER                                :: dx_trace_rel    = 0.25_dp       ! Trace step size relative to grid resolution
+    REAL(dp), DIMENSION(:,:  ), ALLOCATABLE            :: trace_up, trace_down
+    REAL(dp), DIMENSION(:    ), ALLOCATABLE            :: w_up, w_down
+    INTEGER                                            :: i,j,n_up,n_down,k
+    REAL(dp), DIMENSION(2)                             :: p,pt
+    REAL(dp)                                           :: Hs_mod, Hs_target, u_mod, u_target
+    REAL(dp)                                           :: I1, I2, I3, I_tot
+    REAL(dp)                                           :: R
+    REAL(dp)                                           :: h_delta, h_dfrac
+    REAL(dp)                                           :: sigma
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Allocate shared memory
+    CALL allocate_shared_int_2D( grid%ny, grid%nx, mask   , wmask   )
+    CALL allocate_shared_dp_2D(  grid%ny, grid%nx, dphi_dt, wdphi_dt)
+
+    ! Allocate memory for the up- and downstream traces
+    ALLOCATE( trace_up(        2*MAX(grid%nx,grid%ny), 2))
+    ALLOCATE( trace_down(      2*MAX(grid%nx,grid%ny), 2))
+
+    ! Allocate memory for the linear scaling functions
+    ALLOCATE( w_up(   2*MAX(grid%nx,grid%ny)   ))
+    ALLOCATE( w_down( 2*MAX(grid%nx,grid%ny)   ))
+
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+
+      ! Obviously can only be done where there's (grounded) ice
+      IF (ice%mask_sheet_a( j,i) == 0 .OR. ice%mask_margin_a( j,i) == 1 .OR. ice%Hi_a( j,i) < 1._dp .OR. &
+          refgeo_PD%Hi( j,i) < 1._dp .OR. ice%BIV_uabs_surf_target( j,i) == 0._dp .OR. ice%mask_gl_a( j,i) == 1) THEN
+        mask( j,i) = 1
+        CYCLE
+      ELSE
+        mask( j,i) = 2
+      END IF
+
+      ! The point p
+      p = [grid%x( i), grid%y( j)]
+
+      ! Trace the flowline upstream and downstream (Berends et al., 2022, Eqs. 2)
+!      CALL trace_flowline_upstream(   grid, ice, p, dx_trace_rel, trace_up  , n_up             )
+!      CALL trace_flowline_downstream( grid, ice, p, dx_trace_rel, trace_down, n_down, refgeo_PD)
+      n_up = 1
+      trace_up = 0._dp
+      trace_up( 1,:) = p
+      n_down = 1
+      trace_down = 0._dp
+      trace_down( 1,:) = p
+
+      ! Calculate linear scaling functions (Berends et al., Eqs. 5)
+      w_up = 0._dp
+      DO k = 1, n_up
+        w_up( k) = REAL( n_up + 1 - k, dp)
+      END DO
+      w_up = w_up / SUM( w_up)
+
+      w_down = 0._dp
+      DO k = 1, n_down
+        w_down( k) = REAL( n_down + 1 - k, dp)
+      END DO
+      w_down = w_down / SUM( w_down)
+
+      ! Calculate upstream line integrals
+      I1 = 0._dp
+      I3 = 0._dp
+      DO k = 1, n_up
+
+        pt = trace_up( k,:)
+        u_mod     = interp_bilin_2D( ice%uabs_surf_a         , grid%x, grid%y, pt(1), pt(2))
+        u_target  = interp_bilin_2D( ice%BIV_uabs_surf_target, grid%x, grid%y, pt(1), pt(2))
+        Hs_mod    = interp_bilin_2D( ice%Hs_a                , grid%x, grid%y, pt(1), pt(2))
+        Hs_target = interp_bilin_2D( refgeo_PD%Hs          , grid%x, grid%y, pt(1), pt(2))
+
+        ! If no target velocity data is available, assume zero difference
+        IF (u_target /= u_target) u_target = u_mod
+
+        I1 = I1 - ( u_mod -  u_target) * w_up( k) / C%BIVgeo_Berends2022_u0    ! Berends et al., (2022), Eq. 4a
+        I3 = I3 + (Hs_mod - Hs_target) * w_up( k) / C%BIVgeo_Berends2022_H0    ! Berends et al., (2022), Eq. 4c
+
+      END DO
+
+      ! Calculate downstream line integral
+      I2 = 0._dp
+      DO k = 1, n_down
+
+        pt = trace_down( k,:)
+        u_mod     = interp_bilin_2D( ice%uabs_surf_a         , grid%x, grid%y, pt(1), pt(2))
+        u_target  = interp_bilin_2D( ice%BIV_uabs_surf_target, grid%x, grid%y, pt(1), pt(2))
+
+        ! If no target velocity data is available, assume zero difference
+        IF (u_target /= u_target) u_target = u_mod
+
+        I2 = I2 - ( u_mod -  u_target) * w_down( k) / C%BIVgeo_Berends2022_u0  ! Berends et al., (2022), Eq. 4b
+
+      END DO
+
+      ! Scale weights with local ice thickness * velocity
+      ! (thinner and/or ice experiences less basal friction, so the solution is less sensitive to changes in bed roughness there)
+
+      ! Berends et al. (2022), Eq. 7
+      R = MAX( 0._dp, MIN( 1._dp, ((ice%uabs_surf_a( j,i) * ice%Hi_a( j,i)) / (C%BIVgeo_Berends2022_u_scale * C%BIVgeo_Berends2022_Hi_scale)) ))
+      ! Berends et al. (2022), Eq. 6
+      I_tot = (I1 + I2 + I3) * R
+
+      ! Ice thickness difference w.r.t. reference thickness
+      h_delta = ice%Hi_a(j,i) - refgeo_PD%Hi(j,i)
+      ! Ratio between this difference and the reference ice thickness
+      h_dfrac = h_delta / MAX( refgeo_PD%Hi(j,i), 1._dp)
+
+      ! If the difference/fraction is outside the specified tolerance
+      IF (ABS( h_delta) >= C%BIVgeo_Bernales2017_tol_diff .OR. &
+          ABS( h_dfrac) >= C%BIVgeo_Bernales2017_tol_frac) THEN
+
+        ! Further adjust only where the previous value is not improving the result
+        IF ( (h_delta >= 0._dp .AND. ice%dHi_dt_a( j,i) >= 0.0_dp) .OR. &
+             (h_delta <= 0._dp .AND. ice%dHi_dt_a( j,i) <= 0.0_dp) ) THEN
+
+          ! Calculate rate of change of bed roughness (Berends et al. (2022), Eq. 8)
+          dphi_dt( j,i) = -ice%phi_fric_a( j,i) * I_tot / C%BIVgeo_Berends2022_tauc
+
+        END IF
+      END IF
+
+    END DO
+    END DO
+    CALL sync
+
+    ! Extrapolate new values outside the ice sheet
+    CALL extrapolate_updated_bed_roughness( grid, mask, dphi_dt)
+
+    ! Update bed roughness (Berends et al. (2022), Eq. 9)
+
+    ! First regularisation step (function F1 in Berends et al. (2022), Eq. 9)
+    sigma = grid%dx / 1.5_dp
+    CALL smooth_Gaussian_2D( grid, dphi_dt, sigma)
+
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+      ice%phi_fric_a( j,i) = MAX( C%BIVgeo_Berends2022_phimin, MIN( C%BIVgeo_Berends2022_phimax, ice%phi_fric_a( j,i) + dphi_dt( j,i) * dt ))
+    END DO
+    END DO
+    CALL sync
+
+    ! Second regularisation step (function F2 in Berends et al. (2022), Eq. 9)
+    sigma = grid%dx / 4._dp
+    CALL smooth_Gaussian_2D( grid, ice%phi_fric_a, sigma)
+
+    ! Clean up after yourself
+    DEALLOCATE( trace_up  )
+    DEALLOCATE( trace_down)
+    DEALLOCATE( w_up      )
+    DEALLOCATE( w_down    )
+    CALL deallocate_shared( wmask   )
+    CALL deallocate_shared( wdphi_dt)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE update_bed_roughness_Berends2022_noflowline
   SUBROUTINE trace_flowline_upstream( grid, ice, p, dx_trace_rel, T, n)
     ! Trace the flowline passing through point p upstream.
     ! Returns a list T of n points on the flowline spaced dx_trace_rel * grid%dx apart.
@@ -2295,7 +2490,8 @@ CONTAINS
             C%choice_BIVgeo_method == 'Bernales2017') THEN
       ! Not needed in these methods
     ELSEIF (C%choice_BIVgeo_method == 'CISM+' .OR. &
-            C%choice_BIVgeo_method == 'Berends2022') THEN
+            C%choice_BIVgeo_method == 'Berends2022' .OR. &
+            C%choice_BIVgeo_method == 'Berends2022_noflowline') THEN
       ! Needed in these methods
 
       CALL initialise_basal_inversion_target_velocity( grid, ice)
@@ -2327,7 +2523,8 @@ CONTAINS
 
     ! Determine filename
     IF     (C%choice_BIVgeo_method == 'CISM+' .OR. &
-            C%choice_BIVgeo_method == 'Berends2022') THEN
+            C%choice_BIVgeo_method == 'Berends2022' .OR. &
+            C%choice_BIVgeo_method == 'Berends2022_noflowline') THEN
       BIV_target%netcdf%filename = C%BIVgeo_target_velocity_filename
     ELSE
       CALL crash('unknown choice_BIVgeo_method "' // TRIM(C%choice_BIVgeo_method) // '"!')

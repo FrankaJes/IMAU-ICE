@@ -427,10 +427,10 @@ CONTAINS
 
     IF (ice%mask_sheet_a( j,i) == 1 ) THEN
 
-      IF (SMB%SMB_year( j,i) > 0._dp) THEN
+      IF (SMB%SMB( j,i) > 0._dp) THEN
         ! The Robin solution can be used to estimate the subsurface temperature profile in an accumulation area
 
-        thermal_length_scale = SQRT(2._dp * thermal_diffusivity_robin * ice%Hi_a( j,i) / SMB%SMB_year( j,i))
+        thermal_length_scale = SQRT(2._dp * thermal_diffusivity_robin * ice%Hi_a( j,i) / SMB%SMB( j,i))
         DO k = 1, C%nz
           distance_above_bed = (1._dp - C%zeta(k)) * ice%Hi_a( j,i)
           erf1 = erf( distance_above_bed / thermal_length_scale)

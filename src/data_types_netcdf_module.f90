@@ -549,7 +549,7 @@ MODULE data_types_netcdf_module
   END TYPE type_netcdf_reference_geometry
 
   TYPE type_netcdf_climate_snapshot
-    ! For reading an input file containing monthly climate data on a lon/lat-grid
+    ! For reading an input file containing monthly climate data on either an x/y-grid or a lon/lat-grid
 
     CHARACTER(LEN=256) :: filename
 
@@ -605,6 +605,46 @@ MODULE data_types_netcdf_module
     CHARACTER(LEN=256) :: name_var_Wind_DU               = 'Wind_DU              '
 
   END TYPE type_netcdf_climate_snapshot
+
+  TYPE type_netcdf_SMB_snapshot
+    ! For reading an input file containing SMB data on either an x/y-grid or a lon/lat-grid
+
+    CHARACTER(LEN=256) :: filename
+
+    ! ID for NetCDF file:
+    INTEGER :: ncid
+
+  ! Dimensions
+  ! ==========
+
+    INTEGER :: id_dim_x
+    INTEGER :: id_dim_y
+    INTEGER :: id_dim_time
+
+    CHARACTER(LEN=256) :: name_dim_x                     = 'NX                   '
+    CHARACTER(LEN=256) :: name_dim_y                     = 'NY                   '
+    CHARACTER(LEN=256) :: name_dim_time                  = 'time                 '
+
+  ! Variables
+  ! =========
+
+    ! Dimensions
+    INTEGER :: id_var_x
+    INTEGER :: id_var_y
+    INTEGER :: id_var_time
+
+    CHARACTER(LEN=256) :: name_var_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_var_y                     = 'y                    '
+    CHARACTER(LEN=256) :: name_var_time                  = 'time                 '
+
+    ! Field variables
+    INTEGER :: id_var_SMB
+    INTEGER :: id_var_T2m
+
+    CHARACTER(LEN=256) :: name_var_SMB                   = 'SMB                  '
+    CHARACTER(LEN=256) :: name_var_T2m                   = 'T2m                  '
+
+  END TYPE type_netcdf_SMB_snapshot
 
   TYPE type_netcdf_global_ocean_data
     ! For reading an input file containing ocean data on a lon/lat-grid
@@ -710,46 +750,6 @@ MODULE data_types_netcdf_module
     CHARACTER(LEN=256) :: name_var_ghf                   = 'hflux                '
 
   END TYPE type_netcdf_geothermal_heat_flux
-
-  TYPE type_netcdf_regional_SMB_data
-    ! For reading an input file containing monthly SMB and 2-m air temperature on an x/y-grid
-
-    CHARACTER(LEN=256) :: filename
-
-    ! ID for NetCDF file:
-    INTEGER :: ncid
-
-  ! Dimensions
-  ! ==========
-
-    INTEGER :: id_dim_time
-    INTEGER :: id_dim_x
-    INTEGER :: id_dim_y
-
-    CHARACTER(LEN=256) :: name_dim_time                  = 'time                 '
-    CHARACTER(LEN=256) :: name_dim_x                     = 'NX                   '
-    CHARACTER(LEN=256) :: name_dim_y                     = 'NY                   '
-
-  ! Variables
-  ! ==========
-
-    ! Dimensions
-    INTEGER :: id_var_time
-    INTEGER :: id_var_x
-    INTEGER :: id_var_y
-
-    CHARACTER(LEN=256) :: name_var_time                  = 'time                 '
-    CHARACTER(LEN=256) :: name_var_x                     = 'x                    '
-    CHARACTER(LEN=256) :: name_var_y                     = 'y                    '
-
-    ! Field variables
-    INTEGER :: id_var_T2m_year
-    INTEGER :: id_var_SMB_year
-
-    CHARACTER(LEN=256) :: name_var_T2m_year              = 'T2m                  '
-    CHARACTER(LEN=256) :: name_var_SMB_year              = 'SMB                  '
-
-  END TYPE type_netcdf_regional_SMB_data
 
   TYPE type_netcdf_SELEN_global_topo
     ! A NETCDF file containing global topography data for SELEN on an irregular global mesh

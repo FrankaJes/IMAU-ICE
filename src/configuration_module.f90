@@ -432,8 +432,8 @@ MODULE configuration_module
   ! Climate
   ! =======
 
-  CHARACTER(LEN=256)  :: choice_climate_model_config                 = 'matrix_warm_cold'               ! Choice of climate model: "none", "idealised", "PD_obs", "PD_dTglob", "matrix_warm_cold", "direct_global", "direct_regional"
-  CHARACTER(LEN=256)  :: choice_idealised_climate_config             = 'EISMINT1_A'
+  CHARACTER(LEN=256)  :: choice_climate_model_config                 = 'matrix'                         ! Choice of climate model: "none", "idealised", "PD_obs", "direct", "ISMIP-style", "matrix"
+  CHARACTER(LEN=256)  :: choice_idealised_climate_config             = ''
 
   ! Folder with NetCDF files containing direct climate forcing
   CHARACTER(LEN=256)  :: direct_climate_foldername_NAM_config        = ''
@@ -450,12 +450,12 @@ MODULE configuration_module
   LOGICAL             :: do_direct_climate_geo_corr_config           = .TRUE.
 
   ! NetCDF file containing the present-day observed climate (e.g. ERA40)
-  CHARACTER(LEN=256)  :: filename_PD_obs_climate_config              = '/Users/berends/Documents/Datasets/ERA40/ERA40_climate_global.nc'
+  CHARACTER(LEN=256)  :: filename_PD_obs_climate_config              = ''
 
   ! GCM snapshots in the matrix_warm_cold option
-  CHARACTER(LEN=256)  :: filename_climate_snapshot_PI_config         = '/Users/berends/Documents/Datasets/GCM_snapshots/Singarayer_Valdes_2010_PI_Control.nc'
-  CHARACTER(LEN=256)  :: filename_climate_snapshot_warm_config       = '/Users/berends/Documents/Datasets/GCM_snapshots/Singarayer_Valdes_2010_PI_Control.nc'
-  CHARACTER(LEN=256)  :: filename_climate_snapshot_cold_config       = '/Users/berends/Documents/Datasets/GCM_snapshots/Singarayer_Valdes_2010_LGM.nc'
+  CHARACTER(LEN=256)  :: filename_climate_snapshot_PI_config         = ''
+  CHARACTER(LEN=256)  :: filename_climate_snapshot_warm_config       = ''
+  CHARACTER(LEN=256)  :: filename_climate_snapshot_cold_config       = ''
 
   REAL(dp)            :: constant_lapserate_config                   = 0.008_dp                         ! Constant atmospheric lapse rate [K m^-1]
 
@@ -547,16 +547,15 @@ MODULE configuration_module
   ! Surface mass balance
   ! ====================
 
-  CHARACTER(LEN=256)  :: choice_SMB_model_config                     = 'IMAU-ITM'                       ! Choice of SMB model: "uniform", "idealised", "IMAU-ITM", "direct_global", "direct_regional"
+  CHARACTER(LEN=256)  :: choice_SMB_model_config                     = 'IMAU-ITM'                       ! Choice of SMB model: "uniform", "idealised", "direct", "ISMIP-style", "IMAU-ITM"
   CHARACTER(LEN=256)  :: choice_idealised_SMB_config                 = 'EISMINT1_A'
   REAL(dp)            :: SMB_uniform_config                          = 0._dp                            ! Uniform SMB, applied when choice_SMB_model = "uniform" [mie/yr]
 
   ! NetCDF file containing direct global/regional climate forcing
-  CHARACTER(LEN=256)  :: filename_direct_global_SMB_config           = ''
-  CHARACTER(LEN=256)  :: filename_direct_regional_SMB_NAM_config     = ''
-  CHARACTER(LEN=256)  :: filename_direct_regional_SMB_EAS_config     = ''
-  CHARACTER(LEN=256)  :: filename_direct_regional_SMB_GRL_config     = ''
-  CHARACTER(LEN=256)  :: filename_direct_regional_SMB_ANT_config     = ''
+  CHARACTER(LEN=256)  :: filename_direct_SMB_NAM_config              = ''
+  CHARACTER(LEN=256)  :: filename_direct_SMB_EAS_config              = ''
+  CHARACTER(LEN=256)  :: filename_direct_SMB_GRL_config              = ''
+  CHARACTER(LEN=256)  :: filename_direct_SMB_ANT_config              = ''
 
   ! Tuning parameters for the IMAU-ITM SMB model
   CHARACTER(LEN=256)  :: SMB_IMAUITM_choice_init_firn_NAM_config     = 'uniform'                        ! How to initialise the firn layer in the IMAU-ITM SMB model: "uniform", "restart"
@@ -1278,11 +1277,10 @@ MODULE configuration_module
     REAL(dp)                            :: SMB_uniform
 
     ! NetCDF file containing direct global/regional SMB forcing
-    CHARACTER(LEN=256)                  :: filename_direct_global_SMB
-    CHARACTER(LEN=256)                  :: filename_direct_regional_SMB_NAM
-    CHARACTER(LEN=256)                  :: filename_direct_regional_SMB_EAS
-    CHARACTER(LEN=256)                  :: filename_direct_regional_SMB_GRL
-    CHARACTER(LEN=256)                  :: filename_direct_regional_SMB_ANT
+    CHARACTER(LEN=256)                  :: filename_direct_SMB_NAM
+    CHARACTER(LEN=256)                  :: filename_direct_SMB_EAS
+    CHARACTER(LEN=256)                  :: filename_direct_SMB_GRL
+    CHARACTER(LEN=256)                  :: filename_direct_SMB_ANT
 
     ! Tuning parameters for the IMAU-ITM SMB model
     CHARACTER(LEN=256)                  :: SMB_IMAUITM_choice_init_firn_NAM
@@ -2077,11 +2075,10 @@ CONTAINS
                      choice_SMB_model_config,                         &
                      choice_idealised_SMB_config,                     &
                      SMB_uniform_config,                              &
-                     filename_direct_global_SMB_config,               &
-                     filename_direct_regional_SMB_NAM_config,         &
-                     filename_direct_regional_SMB_EAS_config,         &
-                     filename_direct_regional_SMB_GRL_config,         &
-                     filename_direct_regional_SMB_ANT_config,         &
+                     filename_direct_SMB_NAM_config,                  &
+                     filename_direct_SMB_EAS_config,                  &
+                     filename_direct_SMB_GRL_config,                  &
+                     filename_direct_SMB_ANT_config,                  &
                      SMB_IMAUITM_choice_init_firn_NAM_config,         &
                      SMB_IMAUITM_choice_init_firn_EAS_config,         &
                      SMB_IMAUITM_choice_init_firn_GRL_config,         &
@@ -2918,11 +2915,10 @@ CONTAINS
     C%SMB_uniform                              = SMB_uniform_config
 
     ! NetCDF file containing direct global/regional SMB forcing
-    C%filename_direct_global_SMB               = filename_direct_global_SMB_config
-    C%filename_direct_regional_SMB_NAM         = filename_direct_regional_SMB_NAM_config
-    C%filename_direct_regional_SMB_EAS         = filename_direct_regional_SMB_EAS_config
-    C%filename_direct_regional_SMB_GRL         = filename_direct_regional_SMB_GRL_config
-    C%filename_direct_regional_SMB_ANT         = filename_direct_regional_SMB_ANT_config
+    C%filename_direct_SMB_NAM                  = filename_direct_SMB_NAM_config
+    C%filename_direct_SMB_EAS                  = filename_direct_SMB_EAS_config
+    C%filename_direct_SMB_GRL                  = filename_direct_SMB_GRL_config
+    C%filename_direct_SMB_ANT                  = filename_direct_SMB_ANT_config
 
     ! Tuning parameters for the IMAU-ITM SMB model
     C%SMB_IMAUITM_choice_init_firn_NAM         = SMB_IMAUITM_choice_init_firn_NAM_config

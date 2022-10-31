@@ -12,7 +12,8 @@ MODULE climate_module
                                              deallocate_shared, partition_list
   USE data_types_module,               ONLY: type_model_region, type_grid, type_grid_lonlat, type_ice_model, type_SMB_model, &
                                              type_reference_geometry, type_climate_model, type_climate_snapshot, &
-                                             type_climate_model_PD_obs, type_climate_model_direct, type_climate_model_ISMIP_style
+                                             type_climate_model_PD_obs, type_climate_model_direct, type_climate_model_ISMIP_style, &
+                                             type_SMB_model_IMAU_ITM
   USE data_types_netcdf_module,        ONLY: type_netcdf_climate_snapshot, type_netcdf_ISMIP_style_baseline, &
                                              type_netcdf_ISMIP_style_forcing
   USE netcdf_module,                   ONLY: debug, write_to_debug_file, determine_file_grid_type, setup_grid_from_file, &
@@ -31,7 +32,7 @@ MODULE climate_module
                                              map_glob_to_grid_2D, map_glob_to_grid_3D, transpose_dp_2D, transpose_dp_3D, &
                                              map_square_to_square_cons_2nd_order_2D, map_square_to_square_cons_2nd_order_3D
   USE derivatives_and_grids_module,    ONLY: ddx_a_to_a_2D, ddy_a_to_a_2D
-  USE SMB_module,                      ONLY: run_SMB_model
+  USE SMB_module,                      ONLY: run_SMB_model_IMAUITM
 
   IMPLICIT NONE
 
@@ -51,12 +52,32 @@ CONTAINS
 
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_climate_model'
+    REAL(dp)                                           :: wt0,wt1
+    INTEGER                                            :: i,j,m
 
     ! Add routine to path
     CALL init_routine( routine_name)
 
     IF     (C%choice_climate_model == 'none') THEN
-      ! No need to do anything.
+      ! No climate is calculated; SMB is either parameterised or prescribed directly?
+
+      ! In the case of direct SMB forcing, T2m is also prescribed
+      IF (C%choice_SMB_model == 'direct') THEN
+
+        ! Interpolate the two timeframes in time
+        wt0 = (region%SMB%direct%t1 - time) / (region%SMB%direct%t1 - region%SMB%direct%t0)
+        wt1 = 1._dp - wt0
+
+        DO i = region%grid%i1, region%grid%i2
+        DO j = 1, region%grid%ny
+        DO m = 1, 12
+          region%climate%T2m( m,j,i) = (wt0 * region%SMB%direct%timeframe0%T2m( m,j,i)) + (wt1 * region%SMB%direct%timeframe1%T2m( m,j,i))
+        END DO
+        END DO
+        END DO
+        CALL sync
+
+      END IF ! IF (C%choice_SMB_model == 'direct') THEN
 
     ELSEIF (C%choice_climate_model == 'idealised') THEN
       ! Assign some idealised temperature/precipitation
@@ -73,13 +94,7 @@ CONTAINS
 
       CALL run_climate_model_direct( region%grid, region%ice, region%climate, time, region%name)
 
-    ELSEIF (C%choice_climate_model == 'direct_SMB') THEN
-      ! Use a directly prescribed global SMB + 2-m air temperature
-
-      CALL crash('choice_climate_model "'//TRIM( C%choice_climate_model)//'" is broken right now, must be fixed!')
-!      CALL run_climate_model_direct_SMB( region%grid, region%ice, region%climate, time)
-
-    ELSEIF (C%choice_climate_model == 'ISMIP_style') THEN
+    ELSEIF (C%choice_climate_model == 'ISMIP-style') THEN
       ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
 
       CALL run_climate_model_ISMIP_style( region%grid, region%ice, region%climate, time)
@@ -111,6 +126,8 @@ CONTAINS
     ! Add routine to path
     CALL init_routine( routine_name)
 
+    IF (par%master) WRITE (0,*) ' Initialising climate model "', TRIM(C%choice_climate_model), '"...'
+
     ! Always allocate memory for the applied climate
     CALL allocate_shared_dp_3D( 12, region%grid%ny, region%grid%nx, region%climate%Q_TOA,   region%climate%wQ_TOA  )
     CALL allocate_shared_dp_3D( 12, region%grid%ny, region%grid%nx, region%climate%T2m,     region%climate%wT2m    )
@@ -118,10 +135,16 @@ CONTAINS
     CALL allocate_shared_dp_3D( 12, region%grid%ny, region%grid%nx, region%climate%Wind_LR, region%climate%wWind_LR)
     CALL allocate_shared_dp_3D( 12, region%grid%ny, region%grid%nx, region%climate%Wind_DU, region%climate%wWind_DU)
 
-    IF (par%master) WRITE (0,*) ' Initialising climate model "', TRIM(C%choice_climate_model), '"...'
-
     IF     (C%choice_climate_model == 'none') THEN
-      ! No need to initialise anything other than the applied climate
+      ! No climate is calculated; SMB is either parameterised or prescribed directly?
+
+      IF (C%choice_SMB_model == 'uniform' .OR. &
+          C%choice_SMB_model == 'idealised' .OR. &
+          C%choice_SMB_model == 'direct') THEN
+        ! No need to worry, SMB is still calculated
+      ELSE
+        CALL warning('choice_climate_model == "none", but no valid SMB model is recognised; check if this is what you want!')
+      END IF
 
     ELSEIF (C%choice_climate_model == 'idealised') THEN
       ! No need to initialise anything other than the applied climate
@@ -136,13 +159,7 @@ CONTAINS
 
       CALL initialise_climate_model_direct( region%grid, region%climate%direct)
 
-    ELSEIF (C%choice_climate_model == 'direct_SMB') THEN
-      ! Use a directly prescribed climate
-
-      CALL crash('choice_climate_model "'//TRIM( C%choice_climate_model)//'" is broken right now, must be fixed!')
-!      CALL initialise_climate_model_direct_SMB( climate%direct)
-
-    ELSEIF (C%choice_climate_model == 'ISMIP_style') THEN
+    ELSEIF (C%choice_climate_model == 'ISMIP-style') THEN
       ! Use the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
 
       CALL initialise_climate_model_ISMIP_style( region%grid, region%climate%ISMIP_style)
@@ -1406,7 +1423,7 @@ CONTAINS
     DO i = grid%i1, grid%i2
     DO j = 1, grid%ny
     DO m = 1, 12
-      climate%matrix%I_abs( j,i) = climate%matrix%I_abs( j,i) + climate%Q_TOA( m,j,i) * (1._dp - SMB%Albedo( m,j,i))  ! Berends et al., 2018 - Eq. 2
+      climate%matrix%I_abs( j,i) = climate%matrix%I_abs( j,i) + climate%Q_TOA( m,j,i) * (1._dp - SMB%IMAU_ITM%Albedo( m,j,i))  ! Berends et al., 2018 - Eq. 2
     END DO
     END DO
     END DO
@@ -1934,7 +1951,7 @@ CONTAINS
     INTEGER                                             :: i,j,m
     TYPE(type_ice_model)                                :: ice_dummy
     TYPE(type_climate_model)                            :: climate_dummy
-    TYPE(type_SMB_model)                                :: SMB_dummy
+    TYPE(type_SMB_model_IMAU_ITM)                       :: SMB_dummy
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -2043,7 +2060,7 @@ CONTAINS
     ! Run the SMB model for 10 years for this particular climate
     ! (experimentally determined to be long enough to converge)
     DO i = 1, 10
-      CALL run_SMB_model( grid, ice_dummy, climate_dummy, 0._dp, SMB_dummy, mask_noice)
+      CALL run_SMB_model_IMAUITM( grid, ice_dummy, climate_dummy, SMB_dummy, mask_noice)
     END DO
     CALL sync
 
@@ -2160,7 +2177,7 @@ CONTAINS
     ! Determine if the file contains climate snapshot data on a global lon/lat-grid or a regional x/y-grid
     CALL determine_file_grid_type( filename, file_grid_type)
 
-    IF (file_grid_type == 'x/y') THEN
+    IF     (file_grid_type == 'x/y') THEN
       ! This file contains climate data on a regional x/y-grid
       CALL read_climate_snapshot_xy(     filename, grid, snapshot, found_winds)
     ELSEIF (file_grid_type == 'lon/lat') THEN
@@ -2753,226 +2770,5 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE check_safety_precipitation
-
-!! == Directly prescribed regional SMB
-!! ===================================
-!
-!  SUBROUTINE run_climate_model_direct_SMB_regional( grid, climate_matrix, time)
-!    ! Run the regional climate model
-!    !
-!    ! Use a directly prescribed regional SMB
-!
-!    IMPLICIT NONE
-!
-!    ! In/output variables:
-!    TYPE(type_grid),                          INTENT(IN)    :: grid
-!    TYPE(type_climate_matrix_regional),       INTENT(INOUT) :: climate_matrix
-!    REAL(dp),                                 INTENT(IN)    :: time
-!
-!    ! Local variables:
-!    CHARACTER(LEN=256), PARAMETER                           :: routine_name = 'run_climate_model_direct_SMB_regional'
-!    REAL(dp)                                                :: wt0, wt1
-!    INTEGER                                                 :: i,j
-!
-!    ! Add routine to path
-!    CALL init_routine( routine_name)
-!
-!    ! Safety
-!    IF (.NOT. C%choice_SMB_model == 'direct_regional') THEN
-!      CALL crash('choice_SMB_model should be "direct_regional"!')
-!    END IF
-!
-!    ! Check if the requested time is enveloped by the two timeframes;
-!    ! if not, read the two relevant timeframes from the NetCDF file
-!    IF (time < climate_matrix%SMB_direct%t0 .OR. time > climate_matrix%SMB_direct%t1) THEN
-!
-!      ! Find and read the two global time frames
-!      CALL sync
-!      CALL update_direct_regional_SMB_timeframes_from_file( grid, climate_matrix%SMB_direct, time)
-!
-!    END IF ! IF (time >= climate_matrix%SMB_direct%t0 .AND. time <= climate_matrix%SMB_direct%t1) THEN
-!
-!    ! Interpolate the two timeframes in time
-!    wt0 = (climate_matrix%SMB_direct%t1 - time) / (climate_matrix%SMB_direct%t1 - climate_matrix%SMB_direct%t0)
-!    wt1 = 1._dp - wt0
-!
-!    DO i = grid%i1, grid%i2
-!    DO j = 1, grid%ny
-!      climate_matrix%applied%T2m( :,j,i) = (wt0 * climate_matrix%SMB_direct%T2m_year0( j,i)) + (wt1 * climate_matrix%SMB_direct%T2m_year1( j,i))
-!    END DO
-!    END DO
-!    CALL sync
-!
-!    ! Finalise routine path
-!    CALL finalise_routine( routine_name)
-!
-!  END SUBROUTINE run_climate_model_direct_SMB_regional
-!  SUBROUTINE update_direct_regional_SMB_timeframes_from_file( grid, clim_reg, time)
-!    ! Read the NetCDF file containing the regional climate forcing data. Only read the time
-!    ! frames enveloping the current coupling timestep to save on memory usage.
-!
-!    IMPLICIT NONE
-!
-!    TYPE(type_grid),                            INTENT(IN)    :: grid
-!    TYPE(type_direct_SMB_forcing_regional),     INTENT(INOUT) :: clim_reg
-!    REAL(dp),                                   INTENT(IN)    :: time
-!
-!    ! Local variables:
-!    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'update_direct_regional_SMB_timeframes_from_file'
-!    INTEGER                                            :: ti0, ti1
-!
-!    ! Add routine to path
-!    CALL init_routine( routine_name)
-!
-!    ! Safety
-!    IF (.NOT. C%choice_SMB_model == 'direct_regional') THEN
-!      CALL crash('choice_SMB_model should be "direct_regional"!')
-!    END IF
-!
-!    ! Find time indices to be read
-!    IF (par%master) THEN
-!
-!      IF     (time < clim_reg%time( 1)) THEN
-!
-!        CALL warning('using constant start-of-record SMB when extrapolating!')
-!        ti0 = 1
-!        ti1 = 1
-!        clim_reg%t0 = clim_reg%time( ti0) - 1._dp
-!        clim_reg%t1 = clim_reg%time( ti1)
-!
-!      ELSEIF (time <= clim_reg%time( clim_reg%nyears)) THEN
-!
-!        ti1 = 1
-!        DO WHILE (clim_reg%time( ti1) < time)
-!          ti1 = ti1 + 1
-!        END DO
-!        ti0 = ti1 - 1
-!
-!        IF (ti0 == 0) THEN
-!          ti0 = 1
-!          ti1 = 2
-!        ELSEIF (ti1 == clim_reg%nyears) THEN
-!          ti0 = clim_reg%nyears - 1
-!          ti1 = ti0 + 1
-!        END IF
-!
-!        clim_reg%t0 = clim_reg%time( ti0)
-!        clim_reg%t1 = clim_reg%time( ti1)
-!
-!      ELSE ! IF     (time < clim_reg%time( 1)) THEN
-!
-!        CALL warning('using constant end-of-record SMB when extrapolating!')
-!        ti0 = clim_reg%nyears
-!        ti1 = clim_reg%nyears
-!        clim_reg%t0 = clim_reg%time( ti0) - 1._dp
-!        clim_reg%t1 = clim_reg%time( ti1)
-!
-!      END IF ! IF     (time < clim_reg%time( 1)) THEN
-!
-!    END IF ! IF (par%master) THEN
-!
-!    ! Read new regional climate fields from the NetCDF file
-!    IF (par%master) CALL read_direct_regional_SMB_file_timeframes( clim_reg, ti0, ti1)
-!    CALL sync
-!
-!    ! Map the newly read data to the model grid
-!    CALL map_square_to_square_cons_2nd_order_2D( clim_reg%nx_raw, clim_reg%ny_raw, clim_reg%x_raw, clim_reg%y_raw, grid%nx, grid%ny, grid%x, grid%y, clim_reg%T2m_year0_raw, clim_reg%T2m_year0)
-!    CALL map_square_to_square_cons_2nd_order_2D( clim_reg%nx_raw, clim_reg%ny_raw, clim_reg%x_raw, clim_reg%y_raw, grid%nx, grid%ny, grid%x, grid%y, clim_reg%T2m_year1_raw, clim_reg%T2m_year1)
-!    CALL map_square_to_square_cons_2nd_order_2D( clim_reg%nx_raw, clim_reg%ny_raw, clim_reg%x_raw, clim_reg%y_raw, grid%nx, grid%ny, grid%x, grid%y, clim_reg%SMB_year0_raw, clim_reg%SMB_year0)
-!    CALL map_square_to_square_cons_2nd_order_2D( clim_reg%nx_raw, clim_reg%ny_raw, clim_reg%x_raw, clim_reg%y_raw, grid%nx, grid%ny, grid%x, grid%y, clim_reg%SMB_year1_raw, clim_reg%SMB_year1)
-!
-!    ! Finalise routine path
-!    CALL finalise_routine( routine_name)
-!
-!  END SUBROUTINE update_direct_regional_SMB_timeframes_from_file
-!  SUBROUTINE initialise_climate_model_direct_SMB_regional( grid, climate_matrix, region_name)
-!    ! Initialise the regional climate model
-!    !
-!    ! Use a directly prescribed regional SMB
-!
-!    IMPLICIT NONE
-!
-!    ! In/output variables:
-!    TYPE(type_grid),                          INTENT(IN)    :: grid
-!    TYPE(type_climate_matrix_regional),       INTENT(INOUT) :: climate_matrix
-!    CHARACTER(LEN=3),                         INTENT(IN)    :: region_name
-!
-!    ! Local variables:
-!    CHARACTER(LEN=256), PARAMETER                           :: routine_name = 'initialise_climate_model_direct_SMB_regional'
-!    INTEGER                                                 :: nx, ny
-!
-!    ! Add routine to path
-!    CALL init_routine( routine_name)
-!
-!    ! Safety
-!    IF (.NOT. C%choice_SMB_model == 'direct_regional') THEN
-!      CALL crash('choice_SMB_model should be "direct_regional"!')
-!    END IF
-!
-!    ! The times at which we have climate fields from input, between which we'll interpolate
-!    ! to find the climate at model time (t0 <= model_time <= t1)
-!
-!    CALL allocate_shared_dp_0D( climate_matrix%SMB_direct%t0, climate_matrix%SMB_direct%wt0)
-!    CALL allocate_shared_dp_0D( climate_matrix%SMB_direct%t1, climate_matrix%SMB_direct%wt1)
-!
-!    IF (par%master) THEN
-!      ! Give impossible values to timeframes, so that the first call to run_climate_model_direct_climate_global
-!      ! is guaranteed to first read two new timeframes from the NetCDF file
-!      climate_matrix%SMB_direct%t0 = C%start_time_of_run - 100._dp
-!      climate_matrix%SMB_direct%t1 = C%start_time_of_run - 90._dp
-!    END IF ! IF (par%master) THEN
-!    CALL sync
-!
-!    ! Inquire into the direct global cliamte forcing netcdf file
-!    CALL allocate_shared_int_0D( climate_matrix%SMB_direct%nyears, climate_matrix%SMB_direct%wnyears)
-!    CALL allocate_shared_int_0D( climate_matrix%SMB_direct%nx_raw, climate_matrix%SMB_direct%wnx_raw)
-!    CALL allocate_shared_int_0D( climate_matrix%SMB_direct%ny_raw, climate_matrix%SMB_direct%wny_raw)
-!
-!    ! Determine name of file to read data from
-!    IF     (region_name == 'NAM') THEN
-!      climate_matrix%SMB_direct%netcdf%filename = C%filename_direct_regional_SMB_NAM
-!    ELSEIF (region_name == 'EAS') THEN
-!      climate_matrix%SMB_direct%netcdf%filename = C%filename_direct_regional_SMB_EAS
-!    ELSEIF (region_name == 'GRL') THEN
-!      climate_matrix%SMB_direct%netcdf%filename = C%filename_direct_regional_SMB_GRL
-!    ELSEIF (region_name == 'ANT') THEN
-!      climate_matrix%SMB_direct%netcdf%filename = C%filename_direct_regional_SMB_ANT
-!    END IF
-!
-!    IF (par%master) WRITE(0,*) '  Initialising direct regional SMB forcing from ', TRIM( climate_matrix%SMB_direct%netcdf%filename), '...'
-!
-!    IF (par%master) CALL inquire_direct_regional_SMB_forcing_file( climate_matrix%SMB_direct)
-!    CALL sync
-!
-!    ! Abbreviations for shorter code
-!    nx = climate_matrix%SMB_direct%nx_raw
-!    ny = climate_matrix%SMB_direct%ny_raw
-!
-!    ! Allocate shared memory
-!    CALL allocate_shared_dp_1D( climate_matrix%SMB_direct%nyears, climate_matrix%SMB_direct%time, climate_matrix%SMB_direct%wtime  )
-!    CALL allocate_shared_dp_1D(               nx, climate_matrix%SMB_direct%x_raw,         climate_matrix%SMB_direct%wx_raw        )
-!    CALL allocate_shared_dp_1D(      ny,          climate_matrix%SMB_direct%y_raw,         climate_matrix%SMB_direct%wy_raw        )
-!
-!    CALL allocate_shared_dp_2D(      ny,      nx, climate_matrix%SMB_direct%T2m_year0_raw, climate_matrix%SMB_direct%wT2m_year0_raw)
-!    CALL allocate_shared_dp_2D(      ny,      nx, climate_matrix%SMB_direct%T2m_year1_raw, climate_matrix%SMB_direct%wT2m_year1_raw)
-!    CALL allocate_shared_dp_2D(      ny,      nx, climate_matrix%SMB_direct%SMB_year0_raw, climate_matrix%SMB_direct%wSMB_year0_raw)
-!    CALL allocate_shared_dp_2D(      ny,      nx, climate_matrix%SMB_direct%SMB_year1_raw, climate_matrix%SMB_direct%wSMB_year1_raw)
-!
-!    CALL allocate_shared_dp_2D( grid%ny, grid%nx, climate_matrix%SMB_direct%T2m_year0,     climate_matrix%SMB_direct%wT2m_year0    )
-!    CALL allocate_shared_dp_2D( grid%ny, grid%nx, climate_matrix%SMB_direct%T2m_year1,     climate_matrix%SMB_direct%wT2m_year1    )
-!    CALL allocate_shared_dp_2D( grid%ny, grid%nx, climate_matrix%SMB_direct%SMB_year0,     climate_matrix%SMB_direct%wSMB_year0    )
-!    CALL allocate_shared_dp_2D( grid%ny, grid%nx, climate_matrix%SMB_direct%SMB_year1,     climate_matrix%SMB_direct%wSMB_year1    )
-!
-!    ! Read time and grid data
-!    IF (par%master) CALL read_direct_regional_SMB_file_time_xy( climate_matrix%SMB_direct)
-!    CALL sync
-!
-!    ! Lastly, allocate memory for the "applied" snapshot
-!    CALL allocate_climate_snapshot( grid, climate_matrix%applied, name = 'applied')
-!
-!    ! Finalise routine path
-!    CALL finalise_routine( routine_name)
-!
-!  END SUBROUTINE initialise_climate_model_direct_SMB_regional
 
 END MODULE climate_module

@@ -158,7 +158,7 @@ CONTAINS
 
       ! Run the SMB model
       IF (region%do_SMB) THEN
-        CALL run_SMB_model( region%grid, region%ice, region%climate, region%time, region%SMB, region%mask_noice)
+        CALL run_SMB_model( region%grid, region%ice, region%climate, region%time, region%SMB, region%mask_noice, region%name)
       END IF
 
       ! Run the BMB model
@@ -187,7 +187,7 @@ CONTAINS
 
       IF (region%do_BIV) THEN
         IF (region%time > C%BIVgeo_t_start .AND. region%time < C%BIVgeo_t_end) THEN
-          CALL basal_inversion_geo( region%grid, region%ice, region%refgeo_PD, C%BIVgeo_dt)
+          CALL basal_inversion_geo( region%grid, region%ice, region%refgeo_init, C%BIVgeo_dt)
         END IF
       END IF
 
@@ -412,7 +412,7 @@ CONTAINS
 
     ! Run the climate and SMB models once, to get the correct surface temperature+SMB fields for the ice temperature initialisation
     CALL run_climate_model( region, C%start_time_of_run)
-    CALL run_SMB_model( region%grid, region%ice, region%climate, C%start_time_of_run, region%SMB, region%mask_noice)
+    CALL run_SMB_model( region%grid, region%ice, region%climate, C%start_time_of_run, region%SMB, region%mask_noice, region%name)
 
     ! Initialise the temperature field
     CALL initialise_ice_temperature( region%grid, region%ice, region%climate, region%ocean_matrix%applied, region%SMB, region%name)

@@ -2,24 +2,30 @@
 
 ./compile_all.csh
 
-#rm -rf spinup_GRL/phase5_historicalperiod/hybrid_ZoetIverson_PMIP3ens_40km
+#rm -rf Berends2022_basal_inversion/exp_I_target_40km
+#rm -rf Berends2022_basal_inversion/exp_I_target_20km
+#rm -rf Berends2022_basal_inversion/exp_I_target_10km
 
-#mpiexec -n 2 IMAU_ICE_program spinup_GRL/phase5_historicalperiod/config-files/config_hybrid_ZoetIverson_PMIP3ens_40km
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_target_40km
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_target_20km
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_target_10km
 
-rm -rf PROTECT_projections/IMAUICE1_ctrl
-rm -rf PROTECT_projections/IMAUICE2_ctrl
-rm -rf PROTECT_projections/IMAUICE3_ctrl
-rm -rf PROTECT_projections/IMAUICE4_ctrl
-rm -rf PROTECT_projections/IMAUICE5_ctrl
-rm -rf PROTECT_projections/IMAUICE6_ctrl
-rm -rf PROTECT_projections/IMAUICE7_ctrl
-rm -rf PROTECT_projections/IMAUICE8_ctrl
+#rm -rf Berends2022_basal_inversion/exp_I_inv_40km_unperturbed
+#rm -rf Berends2022_basal_inversion/exp_I_inv_20km_unperturbed
+rm -rf Berends2022_basal_inversion/exp_I_inv_20km_unperturbed_CISMplus
+#rm -rf Berends2022_basal_inversion/exp_I_inv_20km_unperturbed_noflowline
 
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE1
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE2
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE3
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE4
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE5
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE6
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE7
-mpiexec -n 2 IMAU_ICE_program PROTECT_projections/config-files/config_control_IMAUICE8
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_inv_40km_unperturbed
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_inv_20km_unperturbed
+mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_inv_20km_unperturbed_CISMplus
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_I_inv_20km_unperturbed_noflowline
+
+#rm -rf Berends2022_basal_inversion/exp_II_target_5km
+
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_II_target_5km
+
+#rm -rf Berends2022_basal_inversion/exp_II_inv_5km_unperturbed
+#rm -rf Berends2022_basal_inversion/exp_II_inv_5km_unperturbed_noflowline
+
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_II_inv_5km_unperturbed
+#mpiexec -n 2 IMAU_ICE_program Berends2022_basal_inversion/config-files/config_exp_II_inv_5km_unperturbed_noflowline

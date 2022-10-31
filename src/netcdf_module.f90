@@ -79,12 +79,11 @@ CONTAINS
     ! SMB
     IF     (C%choice_SMB_model == 'uniform') THEN
     ELSEIF (C%choice_SMB_model == 'idealised') THEN
+    ELSEIF (C%choice_SMB_model == 'direct') THEN
+    ELSEIF (C%choice_SMB_model == 'ISMIP-style') THEN
     ELSEIF (C%choice_SMB_model == 'IMAU-ITM') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, region%restart%netcdf%id_var_FirnDepth,        region%SMB%FirnDepth,        (/1, 1, 1, ti/))
-      CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_MeltPreviousYear, region%SMB%MeltPreviousYear, (/1, 1,    ti/))
-    ELSEIF (C%choice_SMB_model == 'direct_global') THEN
-    ELSEIF (C%choice_SMB_model == 'direct_regional') THEN
-    ELSEIF (C%choice_SMB_model == 'ISMIP_style') THEN
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, region%restart%netcdf%id_var_FirnDepth,        region%SMB%IMAU_ITM%FirnDepth,        (/1, 1, 1, ti/))
+      CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_MeltPreviousYear, region%SMB%IMAU_ITM%MeltPreviousYear, (/1, 1,    ti/))
     ELSE
       CALL crash('unknown choice_SMB_model "' // TRIM(C%choice_SMB_model) // '"!')
     END IF
@@ -403,66 +402,66 @@ CONTAINS
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
 
-    ! Mass balance
+    ! Surface mass balance
     ELSEIF (field_name == 'SMB') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%SMB,       (/1, 1, 1, ti /))
-    ELSEIF (field_name == 'SMB_year') THEN
-      CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%SMB%SMB_year,  (/1, 1,    ti /))
+      CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%SMB%SMB,       (/1, 1,    ti /))
+
+    ! IMAU-ITM SMB components
     ELSEIF (field_name == 'Snowfall') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%Snowfall,  (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%Snowfall,  (/1, 1, 1, ti /))
     ELSEIF (field_name == 'Snowfall_year') THEN
       DO i = 1, region%grid%nx
       DO j = 1, region%grid%ny
-        d_temp( j,i) = SUM( region%SMB%Snowfall( :,j,i))
+        d_temp( j,i) = SUM( region%SMB%IMAU_ITM%Snowfall( :,j,i))
       END DO
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
     ELSEIF (field_name == 'Rainfall') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%Rainfall,  (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%Rainfall,  (/1, 1, 1, ti /))
     ELSEIF (field_name == 'Rainfall_year') THEN
       DO i = 1, region%grid%nx
       DO j = 1, region%grid%ny
-        d_temp( j,i) = SUM( region%SMB%Rainfall( :,j,i))
+        d_temp( j,i) = SUM( region%SMB%IMAU_ITM%Rainfall( :,j,i))
       END DO
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
     ELSEIF (field_name == 'AddedFirn') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%AddedFirn,  (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%AddedFirn,  (/1, 1, 1, ti /))
     ELSEIF (field_name == 'AddedFirn_year') THEN
       DO i = 1, region%grid%nx
       DO j = 1, region%grid%ny
-        d_temp( j,i) = SUM( region%SMB%AddedFirn( :,j,i))
+        d_temp( j,i) = SUM( region%SMB%IMAU_ITM%AddedFirn( :,j,i))
       END DO
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
     ELSEIF (field_name == 'Refreezing') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%Refreezing,       (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%Refreezing,       (/1, 1, 1, ti /))
     ELSEIF (field_name == 'Refreezing_year') THEN
-      CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%SMB%Refreezing_year,  (/1, 1,    ti /))
+      CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%SMB%IMAU_ITM%Refreezing_year,  (/1, 1,    ti /))
     ELSEIF (field_name == 'Runoff') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%Runoff,       (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%Runoff,       (/1, 1, 1, ti /))
     ELSEIF (field_name == 'Runoff_year') THEN
       DO i = 1, region%grid%nx
       DO j = 1, region%grid%ny
-        d_temp( j,i) = SUM( region%SMB%Runoff( :,j,i))
+        d_temp( j,i) = SUM( region%SMB%IMAU_ITM%Runoff( :,j,i))
       END DO
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
     ELSEIF (field_name == 'Albedo') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%Albedo,  (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%Albedo,  (/1, 1, 1, ti /))
     ELSEIF (field_name == 'Albedo_year') THEN
       DO i = 1, region%grid%nx
       DO j = 1, region%grid%ny
-        d_temp( j,i) = SUM( region%SMB%Albedo( :,j,i)) / 12._dp
+        d_temp( j,i) = SUM( region%SMB%IMAU_ITM%Albedo( :,j,i)) / 12._dp
       END DO
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
     ELSEIF (field_name == 'FirnDepth') THEN
-      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%FirnDepth,       (/1, 1, 1, ti /))
+      CALL write_data_to_file_dp_3D( ncid, nx, ny, 12, id_var,               region%SMB%IMAU_ITM%FirnDepth,       (/1, 1, 1, ti /))
     ELSEIF (field_name == 'FirnDepth_year') THEN
       DO i = 1, region%grid%nx
       DO j = 1, region%grid%ny
-        d_temp( j,i) = SUM( region%SMB%FirnDepth( :,j,i)) / 12._dp
+        d_temp( j,i) = SUM( region%SMB%IMAU_ITM%FirnDepth( :,j,i)) / 12._dp
       END DO
       END DO
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               d_temp,                     (/1, 1,    ti /))
@@ -1114,12 +1113,11 @@ CONTAINS
     ! SMB
     IF     (C%choice_SMB_model == 'uniform') THEN
     ELSEIF (C%choice_SMB_model == 'idealised') THEN
+    ELSEIF (C%choice_SMB_model == 'direct') THEN
+    ELSEIF (C%choice_SMB_model == 'ISMIP-style') THEN
     ELSEIF (C%choice_SMB_model == 'IMAU-ITM') THEN
       CALL create_double_var( region%restart%netcdf%ncid, region%restart%netcdf%name_var_FirnDepth,        [x, y,    m, t], region%restart%netcdf%id_var_FirnDepth,        long_name='Firn depth', units='m')
       CALL create_double_var( region%restart%netcdf%ncid, region%restart%netcdf%name_var_MeltPreviousYear, [x, y,       t], region%restart%netcdf%id_var_MeltPreviousYear, long_name='Melt during previous year', units='mie')
-    ELSEIF (C%choice_SMB_model == 'direct_global') THEN
-    ELSEIF (C%choice_SMB_model == 'direct_regional') THEN
-    ELSEIF (C%choice_SMB_model == 'ISMIP_style') THEN
     ELSE
       CALL crash('unknown choice_SMB_model "' // TRIM(C%choice_SMB_model) // '"!')
     END IF
@@ -1475,9 +1473,7 @@ CONTAINS
 
     ! Mass balance
     ELSEIF (field_name == 'SMB') THEN
-      CALL create_double_var( region%help_fields%ncid, 'SMB',                      [x, y, m, t], id_var, long_name='Monthly surface mass balance', units='m ice equivalent')
-    ELSEIF (field_name == 'SMB_year') THEN
-      CALL create_double_var( region%help_fields%ncid, 'SMB_year',                 [x, y,    t], id_var, long_name='Annual surface mass balance', units='m ice equivalent')
+      CALL create_double_var( region%help_fields%ncid, 'SMB',                      [x, y,    t], id_var, long_name='Annual surface mass balance', units='m ice equivalent')
     ELSEIF (field_name == 'Snowfall') THEN
       CALL create_double_var( region%help_fields%ncid, 'Snowfall',                 [x, y, m, t], id_var, long_name='Monthly total snowfall', units='m water equivalent')
     ELSEIF (field_name == 'Snowfall_year') THEN
@@ -3643,7 +3639,7 @@ CONTAINS
     LOGICAL,                            INTENT(IN)    :: do_read_winds
 
     ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_climate_snapshot_file'
+    CHARACTER(LEN=256), PARAMETER                     :: routine_name = 'read_climate_snapshot_file_xy'
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -3748,7 +3744,7 @@ CONTAINS
     LOGICAL,                            INTENT(IN)    :: do_read_winds
 
     ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_climate_snapshot_file'
+    CHARACTER(LEN=256), PARAMETER                     :: routine_name = 'read_climate_snapshot_file_lonlat'
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -3777,6 +3773,149 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_climate_snapshot_file_lonlat
+
+  ! SMB snapshot (SMB, monthly 2-m temperature)
+  SUBROUTINE inquire_SMB_snapshot_file( netcdf)
+    ! Check if the right dimensions and variables are present in the file.
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_netcdf_SMB_snapshot),     INTENT(INOUT) :: netcdf
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                     :: routine_name = 'inquire_SMB_snapshot_file'
+    INTEGER                                           :: nx, ny, nt, x, y, t
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Let only the Master access the NetCDF file
+    IF (par%master) THEN
+
+      ! Open the netcdf file
+      CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+      ! Inquire dimensions id's. Check that all required dimensions exist return their lengths.
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_x   , nx, netcdf%id_dim_x   )
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_y   , ny, netcdf%id_dim_y   )
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_time, nt, netcdf%id_dim_time)
+
+      ! Abbreviations for cleaner code
+      x = netcdf%id_dim_x
+      y = netcdf%id_dim_y
+      t = netcdf%id_dim_time
+
+      ! Inquire variable id's. Make sure that each variable has the correct dimensions:
+      CALL inquire_single_or_double_var( netcdf%ncid, netcdf%name_var_x      , (/ x       /), netcdf%id_var_x       )
+      CALL inquire_single_or_double_var( netcdf%ncid, netcdf%name_var_y      , (/ y       /), netcdf%id_var_y       )
+      CALL inquire_single_or_double_var( netcdf%ncid, netcdf%name_var_SMB    , (/ x, y, t /), netcdf%id_var_SMB     )
+      CALL inquire_single_or_double_var( netcdf%ncid, netcdf%name_var_T2m    , (/ x, y, t /), netcdf%id_var_T2m     )
+
+      ! Close the netcdf file
+      CALL close_netcdf_file( netcdf%ncid)
+
+    END IF ! IF (par%master) THEN
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE inquire_SMB_snapshot_file
+  SUBROUTINE read_SMB_snapshot_file( netcdf, time, nx, x, wx, ny, y, wy, SMB, wSMB, T2m, wT2m)
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_netcdf_SMB_snapshot),      INTENT(INOUT) :: netcdf
+    REAL(dp),                            INTENT(IN)    :: time
+    INTEGER,                             INTENT(OUT)   :: nx
+    REAL(dp), DIMENSION(:    ), POINTER, INTENT(OUT)   ::  x
+    INTEGER,                             INTENT(OUT)   :: wx
+    INTEGER,                             INTENT(OUT)   :: ny
+    REAL(dp), DIMENSION(:    ), POINTER, INTENT(OUT)   ::  y
+    INTEGER,                             INTENT(OUT)   :: wy
+    REAL(dp), DIMENSION(:,:  ), POINTER, INTENT(OUT)   ::  SMB
+    INTEGER,                             INTENT(OUT)   :: wSMB
+    REAL(dp), DIMENSION(:,:  ), POINTER, INTENT(OUT)   ::  T2m
+    INTEGER,                             INTENT(OUT)   :: wT2m
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                     :: routine_name = 'read_SMB_snapshot_file'
+    INTEGER                                           :: ntime_from_file
+    REAL(dp), DIMENSION(:    ), ALLOCATABLE           ::  time_from_file
+    INTEGER                                           :: ti, ti_min
+    REAL(dp)                                          :: dt, dt_min
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Inquire file
+    CALL inquire_SMB_snapshot_file( netcdf)
+
+    ! Read grid size
+    IF (par%master) THEN
+      CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_x, nx, netcdf%id_dim_x)
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_y, ny, netcdf%id_dim_y)
+      CALL close_netcdf_file( netcdf%ncid)
+    END IF ! IF (par%master) THEN
+    CALL MPI_BCAST( nx, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+    CALL MPI_BCAST( ny, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+
+    ! Allocate shared memory
+    CALL allocate_shared_dp_1D( nx, x, wx)
+    CALL allocate_shared_dp_1D( ny, y, wy)
+    CALL allocate_shared_dp_2D( nx, ny, SMB, wSMB)
+    CALL allocate_shared_dp_2D( nx, ny, T2m, wT2m)
+
+    ! Read grid
+    IF (par%master) THEN
+      CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+      CALL handle_error( nf90_get_var( netcdf%ncid, netcdf%id_var_x, x))
+      CALL handle_error( nf90_get_var( netcdf%ncid, netcdf%id_var_y, y))
+      CALL close_netcdf_file( netcdf%ncid)
+    END IF ! IF (par%master) THEN
+    CALL sync
+
+    ! Read data
+    IF (par%master) THEN
+
+      ! Determine which timeframe to read
+      CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+      CALL inquire_dim( netcdf%ncid, netcdf%name_dim_time, ntime_from_file, netcdf%id_dim_time)
+      CALL inquire_single_or_double_var( netcdf%ncid, netcdf%name_var_time, [netcdf%id_dim_time], netcdf%id_var_time)
+      ALLOCATE( time_from_file( ntime_from_file))
+      CALL handle_error( nf90_get_var( netcdf%ncid, netcdf%id_var_time, time_from_file))
+      CALL close_netcdf_file( netcdf%ncid)
+
+      dt_min = 1E9_dp
+      ti_min = 0
+      DO ti = 1, ntime_from_file
+        dt = ABS(time_from_file( ti) - time)
+        IF (dt < dt_min) THEN
+          dt_min = dt
+          ti_min = ti
+        END IF
+      END DO
+
+      ! Safety
+      IF (ti_min == 0) CALL crash('whaa!')
+
+      DEALLOCATE( time_from_file)
+
+      ! Read data
+      CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+      CALL handle_error( nf90_get_var( netcdf%ncid, netcdf%id_var_SMB, SMB, start = (/ 1, 1, ti_min /) ))
+      CALL handle_error( nf90_get_var( netcdf%ncid, netcdf%id_var_T2m, T2m, start = (/ 1, 1, ti_min /) ))
+      CALL close_netcdf_file( netcdf%ncid)
+
+    END IF ! IF (par%master) THEN
+    CALL sync
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE read_SMB_snapshot_file
 
   ! Present-day observed global ocean (e.g. WOA18)
   SUBROUTINE inquire_PD_obs_global_ocean_file( ocn)
@@ -4368,162 +4507,6 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_geothermal_heat_flux_file
-
-!  ! Direct regional SMB forcing
-!  SUBROUTINE inquire_direct_regional_SMB_forcing_file( clim)
-!
-!    IMPLICIT NONE
-!
-!    ! Output variable
-!    TYPE(type_direct_SMB_forcing_regional), INTENT(INOUT) :: clim
-!
-!    ! Local variables:
-!    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'inquire_direct_regional_SMB_forcing_file'
-!    INTEGER                                :: x,y,t
-!
-!    ! Add routine to path
-!    CALL init_routine( routine_name)
-!
-!    IF (.NOT. par%master) THEN
-!      CALL finalise_routine( routine_name)
-!      RETURN
-!    END IF
-!
-!    ! Safety
-!    IF (.NOT. C%choice_SMB_model == 'direct_regional') THEN
-!      CALL crash('should only be called when choice_SMB_model = "direct_regional"!')
-!    END IF
-!
-!    ! Open the netcdf file
-!    CALL open_netcdf_file( clim%netcdf%filename, clim%netcdf%ncid)
-!
-!    ! Inquire dimensions id's. Check that all required dimensions exist, and return their lengths.
-!    CALL inquire_dim( clim%netcdf%ncid, clim%netcdf%name_dim_x,     clim%nx_raw, clim%netcdf%id_dim_x    )
-!    CALL inquire_dim( clim%netcdf%ncid, clim%netcdf%name_dim_y,     clim%ny_raw, clim%netcdf%id_dim_y    )
-!    CALL inquire_dim( clim%netcdf%ncid, clim%netcdf%name_dim_time,  clim%nyears, clim%netcdf%id_dim_time )
-!
-!    ! Abbreviate dimension ID's for more readable code
-!    x = clim%netcdf%id_dim_x
-!    y = clim%netcdf%id_dim_y
-!    t = clim%netcdf%id_dim_time
-!
-!    ! Inquire variable id's. Make sure that each variable has the correct dimensions.
-!    CALL inquire_double_var( clim%netcdf%ncid, clim%netcdf%name_var_x,        (/ x       /), clim%netcdf%id_var_x       )
-!    CALL inquire_double_var( clim%netcdf%ncid, clim%netcdf%name_var_y,        (/    y    /), clim%netcdf%id_var_y       )
-!    CALL inquire_double_var( clim%netcdf%ncid, clim%netcdf%name_var_time,     (/       t /), clim%netcdf%id_var_time    )
-!
-!    CALL inquire_double_var( clim%netcdf%ncid, clim%netcdf%name_var_T2m_year, (/ x, y, t /), clim%netcdf%id_var_T2m_year)
-!    CALL inquire_double_var( clim%netcdf%ncid, clim%netcdf%name_var_SMB_year, (/ x, y, t /), clim%netcdf%id_var_SMB_year)
-!
-!    ! Close the netcdf file
-!    CALL close_netcdf_file( clim%netcdf%ncid)
-!
-!    ! Finalise routine path
-!    CALL finalise_routine( routine_name)
-!
-!  END SUBROUTINE inquire_direct_regional_SMB_forcing_file
-!  SUBROUTINE read_direct_regional_SMB_file_timeframes( clim, ti0, ti1)
-!
-!    IMPLICIT NONE
-!
-!    ! In/output variables:
-!    TYPE(type_direct_SMB_forcing_regional), INTENT(INOUT) :: clim
-!    INTEGER,                        INTENT(IN)    :: ti0, ti1
-!
-!    ! Local variables:
-!    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_direct_regional_SMB_file_timeframes'
-!    INTEGER                                       :: i,j
-!    REAL(dp), DIMENSION(:,:,:  ), ALLOCATABLE     :: T2m_temp0, T2m_temp1, SMB_temp0, SMB_temp1
-!
-!    ! Add routine to path
-!    CALL init_routine( routine_name)
-!
-!    IF (.NOT. par%master) THEN
-!      CALL finalise_routine( routine_name)
-!      RETURN
-!    END IF
-!
-!    ! Safety
-!    IF (.NOT. C%choice_SMB_model == 'direct_regional') THEN
-!      CALL crash('should only be called when choice_SMB_model = "direct_regional"!')
-!    END IF
-!
-!    ! Temporary memory to store the data read from the netCDF file
-!    ALLOCATE( T2m_temp0( clim%nx_raw, clim%ny_raw, 1))
-!    ALLOCATE( T2m_temp1( clim%nx_raw, clim%ny_raw, 1))
-!    ALLOCATE( SMB_temp0( clim%nx_raw, clim%ny_raw, 1))
-!    ALLOCATE( SMB_temp1( clim%nx_raw, clim%ny_raw, 1))
-!
-!    ! Open netcdf file
-!    CALL open_netcdf_file( clim%netcdf%filename, clim%netcdf%ncid)
-!
-!    ! Read the data
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_T2m_year, T2m_temp0, start = (/ 1, 1, ti0 /), count = (/ clim%nx_raw, clim%ny_raw, 1 /), stride = (/ 1, 1, 1 /) ))
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_T2m_year, T2m_temp1, start = (/ 1, 1, ti1 /), count = (/ clim%nx_raw, clim%nx_raw, 1 /), stride = (/ 1, 1, 1 /) ))
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_SMB_year, SMB_temp0, start = (/ 1, 1, ti0 /), count = (/ clim%nx_raw, clim%ny_raw, 1 /), stride = (/ 1, 1, 1 /) ))
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_SMB_year, SMB_temp1, start = (/ 1, 1, ti1 /), count = (/ clim%nx_raw, clim%nx_raw, 1 /), stride = (/ 1, 1, 1 /) ))
-!
-!     ! Close netcdf file
-!    CALL close_netcdf_file( clim%netcdf%ncid)
-!
-!    ! Store the data in the shared memory structure
-!    DO i = 1, clim%nx_raw
-!    DO j = 1, clim%ny_raw
-!      clim%T2m_year0_raw( j,i) = T2m_temp0( i,j,1)
-!      clim%T2m_year1_raw( j,i) = T2m_temp1( i,j,1)
-!      clim%SMB_year0_raw( j,i) = SMB_temp0( i,j,1)
-!      clim%SMB_year1_raw( j,i) = SMB_temp1( i,j,1)
-!    END DO
-!    END DO
-!
-!    ! Clean up after yourself
-!    DEALLOCATE( T2m_temp0)
-!    DEALLOCATE( T2m_temp1)
-!    DEALLOCATE( SMB_temp0)
-!    DEALLOCATE( SMB_temp1)
-!
-!    ! Finalise routine path
-!    CALL finalise_routine( routine_name)
-!
-!  END SUBROUTINE read_direct_regional_SMB_file_timeframes
-!  SUBROUTINE read_direct_regional_SMB_file_time_xy( clim)
-!
-!    IMPLICIT NONE
-!
-!    ! Output variable
-!    TYPE(type_direct_SMB_forcing_regional), INTENT(INOUT) :: clim
-!
-!    ! Local variables:
-!    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_direct_regional_SMB_file_time_xy'
-!
-!    ! Add routine to path
-!    CALL init_routine( routine_name)
-!
-!    IF (.NOT. par%master) THEN
-!      CALL finalise_routine( routine_name)
-!      RETURN
-!    END IF
-!
-!    ! Safety
-!    IF (.NOT. C%choice_SMB_model == 'direct_regional') THEN
-!      CALL crash('should only be called when choice_SMB_model = "direct_regional"!')
-!    END IF
-!
-!    ! Open the netcdf file
-!    CALL open_netcdf_file( clim%netcdf%filename, clim%netcdf%ncid)
-!
-!    ! Read the data
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_time, clim%time,  start = (/ 1 /) ))
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_x,    clim%x_raw, start = (/ 1 /) ))
-!    CALL handle_error(nf90_get_var( clim%netcdf%ncid, clim%netcdf%id_var_y,    clim%y_raw, start = (/ 1 /) ))
-!
-!    ! Close the netcdf file
-!    CALL close_netcdf_file( clim%netcdf%ncid)
-!
-!    ! Finalise routine path
-!    CALL finalise_routine( routine_name)
-!
-!  END SUBROUTINE read_direct_regional_SMB_file_time_xy
 
   ! Global topography for SELEN
   SUBROUTINE inquire_SELEN_global_topo_file( SELEN)
@@ -5442,7 +5425,7 @@ CONTAINS
       mass_above_floatation             = mass_above_floatation             + MAX( 0._dp, (region%ice%TAF_a(                 j,i) * region%grid%dx**2 * ice_density))    ! kg
       grounded_ice_sheet_area           = grounded_ice_sheet_area           + (grounded_ice_sheet_area_fraction( j,i) * region%grid%dx**2)                  ! m2
       floating_ice_sheet_area           = floating_ice_sheet_area           + (floating_ice_shelf_area_fraction( j,i) * region%grid%dx**2)                  ! m2
-      total_SMB                         = total_SMB                         + (land_ice_area_fraction( j,i) * region%SMB%SMB_year(  j,i) * region%grid%dx**2 * ice_density / sec_per_year) ! kg s-1
+      total_SMB                         = total_SMB                         + (land_ice_area_fraction( j,i) * region%SMB%SMB(       j,i) * region%grid%dx**2 * ice_density / sec_per_year) ! kg s-1
       total_BMB                         = total_BMB                         + (land_ice_area_fraction( j,i) * region%BMB%BMB(       j,i) * region%grid%dx**2 * ice_density / sec_per_year) ! kg s-1
       total_BMB_shelf                   = total_BMB_shelf                   + (land_ice_area_fraction( j,i) * region%BMB%BMB_shelf( j,i) * region%grid%dx**2 * ice_density / sec_per_year) ! kg s-1
       total_calving_flux                = total_calving_flux                + (calving_flux( j,i)                                        * region%grid%dx**2 * ice_density / sec_per_year) ! kg s-1
@@ -5456,7 +5439,7 @@ CONTAINS
     CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%ice%Hs_a                    , 'orog'                     )
     CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%ice%Hb_a                    , 'topg'                     )
     CALL write_to_ISMIP_output_file_field_notime(  foldername, icesheet_code,              region%ice%GHF_a                   , 'hfgeoubed'                )
-    CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%SMB%SMB_year                , 'acabf'                    )
+    CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%SMB%SMB                     , 'acabf'                    )
     CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%BMB%BMB_sheet               , 'libmassbfgr'              )
     CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%BMB%BMB_shelf               , 'libmassbffl'              )
     CALL write_to_ISMIP_output_file_field(         foldername, icesheet_code, region%time, region%ice%dHs_dt_a                , 'dlithkdt'                 )

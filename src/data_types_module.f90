@@ -478,27 +478,6 @@ MODULE data_types_module
 
   END TYPE type_climate_model_direct
 
-  TYPE type_climate_model_direct_SMB_snapshot
-    ! A single timeframe of monthly SMB and monthly 2-m air temperature on the model grid
-
-    REAL(dp), DIMENSION(:,:  ), POINTER     :: SMB
-    REAL(dp), DIMENSION(:,:,:), POINTER     :: T2m
-    INTEGER :: wSMB, wT2m
-
-  END TYPE type_climate_model_direct_SMB_snapshot
-
-  TYPE type_climate_model_direct_SMB
-    ! The "direct_SMB" climate model option: directly prescribed SMB + temperature
-
-    ! Timestamps of the two timeframes
-    REAL(dp)                                :: t0, t1
-
-    ! The two timeframes enveloping the model time
-    TYPE( type_climate_model_direct_SMB_snapshot) :: timeframe0
-    TYPE( type_climate_model_direct_SMB_snapshot) :: timeframe1
-
-  END TYPE type_climate_model_direct_SMB
-
   TYPE type_climate_model_ISMIP_style_snapshot
     ! A single timeframe of data fields for the ISMIP-style (SMB + aSMB + dSMBdz + ST + aST + dSTdz) forcing
 
@@ -566,10 +545,9 @@ MODULE data_types_module
   TYPE type_climate_model
     ! All the different climate model options, and the applied climate
 
-    ! All the different climate model options
+    ! All the different climate model options ("none" and "idealised" don't require separate data structures)
     TYPE(type_climate_model_PD_obs)         :: PD_obs             ! The "PD_obs"          climate model option: fixed present-day climate
-    TYPE(type_climate_model_direct)         :: direct             ! The "direct_climate"  climate model option: directly prescribed climate
-    TYPE(type_climate_model_direct_SMB)     :: direct_SMB         ! The "direct_SMB"      climate model option: directly prescribed SMB + temperature
+    TYPE(type_climate_model_direct)         :: direct             ! The "direct"          climate model option: directly prescribed climate
     TYPE(type_climate_model_ISMIP_style)    :: ISMIP_style        ! The "ISMIP-style"     climate model option: aSMB + dSMBdz + aST + dSTdz
     TYPE(type_climate_model_matrix)         :: matrix             ! The "matrix"          climate model option: three GCM snapshots (warm, cold, and PI), and a PD reanalysis snapshot to use for bias correction
 
@@ -705,8 +683,29 @@ MODULE data_types_module
 
   END TYPE type_highres_ocean_data
 
-  TYPE type_SMB_model
-    ! The different SMB components, calculated from the prescribed climate
+  TYPE type_SMB_model_direct_snapshot
+    ! A single timeframe of monthly SMB and monthly 2-m air temperature on the model grid
+
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: SMB
+    REAL(dp), DIMENSION(:,:,:), POINTER     :: T2m
+    INTEGER :: wSMB, wT2m
+
+  END TYPE type_SMB_model_direct_snapshot
+
+  TYPE type_SMB_model_direct
+    ! The "direct" SMB model option: directly prescribed SMB + temperature
+
+    ! Timestamps of the two timeframes
+    REAL(dp)                                :: t0, t1
+
+    ! The two timeframes enveloping the model time
+    TYPE( type_SMB_model_direct_snapshot)   :: timeframe0
+    TYPE( type_SMB_model_direct_snapshot)   :: timeframe1
+
+  END TYPE type_SMB_model_direct
+
+  TYPE type_SMB_model_IMAU_ITM
+    ! The data fields of the IMAU-ITM SMB model
 
     ! Tuning parameters for the IMAU-ITM SMB model (different for each region, set from config)
     REAL(dp),                   POINTER     :: C_abl_constant
@@ -732,6 +731,19 @@ MODULE data_types_module
     REAL(dp), DIMENSION(:,:  ), POINTER     :: SMB_year                      ! Yearly  SMB (m)
     INTEGER :: wAlbedoSUrf, wMeltPreviousYear, wFirnDepth, wRainfall, wSnowfall, wAddedFirn, wMelt
     INTEGER :: wRefreezing, wRefreezing_year, wRunoff, wAlbedo, wAlbedo_year, wSMB, wSMB_year
+
+  END TYPE type_SMB_model_IMAU_ITM
+
+  TYPE type_SMB_model
+    ! All the different SMB model options, and the applied SMB
+
+    ! All the different SMB model options ("uniform" and "idealised" don't require separate data structures)
+    TYPE(type_SMB_model_direct)             :: direct             ! The "direct"          SMB model option: directly prescribed SMB
+    TYPE(type_SMB_model_IMAU_ITM)           :: IMAU_ITM           ! The "IMAU-ITM"        SMB model option
+
+    ! The applied SMB
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: SMB                ! Total yearly surface mass balance [meters of ice equivalent]
+    INTEGER :: wSMB
 
   END TYPE type_SMB_model
 

@@ -81,8 +81,8 @@ CONTAINS
     DO i = region%grid%i1, region%grid%i2
     DO j = 1, region%grid%ny
       IF (region%ice%mask_ice_a( j,i) == 1) THEN
-        total_SMB = total_SMB + (region%SMB%SMB_year( j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
-        total_BMB = total_BMB + (region%BMB%BMB(      j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+        total_SMB = total_SMB + (region%SMB%SMB( j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+        total_BMB = total_BMB + (region%BMB%BMB( j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
       END IF
     END DO
     END DO
@@ -104,9 +104,8 @@ CONTAINS
     ! Individual SMB components
     IF     (C%choice_SMB_model == 'uniform' .OR. &
             C%choice_SMB_model == 'idealised' .OR. &
-            C%choice_SMB_model == 'direct_global' .OR. &
-            C%choice_SMB_model == 'direct_regional' .OR. &
-            C%choice_SMB_model == 'ISMIP_style') THEN
+            C%choice_SMB_model == 'direct' .OR. &
+            C%choice_SMB_model == 'ISMIP0style') THEN
       ! Do nothing
     ELSEIF (C%choice_SMB_model == 'IMAU-ITM' .OR. &
             C%choice_SMB_model == 'IMAU-ITM_wrongrefreezing') THEN
@@ -123,11 +122,11 @@ CONTAINS
         IF (region%ice%Hi_a( j,i) > 0._dp) THEN
 
           DO m = 1, 12
-            total_snowfall   = total_snowfall   + (region%SMB%Snowfall(   m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
-            total_rainfall   = total_rainfall   + (region%SMB%Rainfall(   m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
-            total_melt       = total_melt       + (region%SMB%Melt(       m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
-            total_refreezing = total_refreezing + (region%SMB%Refreezing( m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
-            total_runoff     = total_runoff     + (region%SMB%Runoff(     m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+            total_snowfall   = total_snowfall   + (region%SMB%IMAU_ITM%Snowfall(   m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+            total_rainfall   = total_rainfall   + (region%SMB%IMAU_ITM%Rainfall(   m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+            total_melt       = total_melt       + (region%SMB%IMAU_ITM%Melt(       m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+            total_refreezing = total_refreezing + (region%SMB%IMAU_ITM%Refreezing( m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
+            total_runoff     = total_runoff     + (region%SMB%IMAU_ITM%Runoff(     m,j,i) * region%grid%dx * region%grid%dx / 1E9_dp)
           END DO
 
         END IF
