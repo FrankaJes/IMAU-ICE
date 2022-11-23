@@ -31,7 +31,7 @@ MODULE IMAU_ICE_main_model
   USE ocean_module,                        ONLY: initialise_ocean_model_regional,   run_ocean_model
   USE climate_module,                      ONLY: initialise_climate_model,          run_climate_model
   USE SMB_module,                          ONLY: initialise_SMB_model,              run_SMB_model
-  USE BMB_module,                          ONLY: initialise_BMB_model,              run_BMB_model
+  USE BMB_module,                          ONLY: initialise_BMB_model,              run_BMB_model,      ocean_temperature_inversion
   USE isotopes_module,                     ONLY: initialise_isotopes_model,         run_isotopes_model
   USE bedrock_ELRA_module,                 ONLY: initialise_ELRA_model,             run_ELRA_model
 # if (defined(DO_SELEN))
@@ -89,7 +89,6 @@ CONTAINS
     dt_ave = 0._dp
     DO WHILE (region%time < t_end)
       it = it + 1
-
     ! GIA
     ! ===
 
@@ -191,6 +190,14 @@ CONTAINS
         IF (region%time > C%BIVgeo_t_start .AND. region%time < C%BIVgeo_t_end) THEN
           CALL basal_inversion_geo( region%grid, region%ice, region%refgeo_PD, C%BIVgeo_dt)
         END IF
+      END IF
+      
+    ! == Ocean temperature inversion
+    ! ==============================
+
+      IF (C%do_ocean_temperature_inversion .AND. region%do_BMB) THEN
+        ! Adjust ocean temperatures
+        CALL ocean_temperature_inversion( region%grid, region%ice, region%BMB, region%refgeo_PD, region%time)
       END IF
 
     ! Time step and output
@@ -466,7 +473,7 @@ CONTAINS
     ! ===== The BMB model =====
     ! =========================
 
-    CALL initialise_BMB_model( region%grid, region%ice, region%BMB, region%name)
+    CALL initialise_BMB_model( region%grid, region%ice, region%ocean_matrix%applied, region%BMB, region%name)
 
     ! ===== The GIA model =====
     ! =========================

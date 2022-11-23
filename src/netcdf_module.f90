@@ -114,7 +114,11 @@ CONTAINS
     ELSE
       CALL crash('unknown choice_forcing_method "' // TRIM(C%choice_forcing_method) // '"!')
     END IF
-
+    
+    ! inverse ocean temperatures
+    IF     (C%do_ocean_temperature_inversion) THEN
+      CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_T_ocean_base,               region%BMB%T_ocean_base,             (/1, 1,    ti/))
+    END IF
     ! Close the file
     CALL close_netcdf_file(region%restart%netcdf%ncid)
 
@@ -520,6 +524,8 @@ CONTAINS
       CALL write_data_to_file_dp_3D( ncid, nx, ny, nzo, id_var,              region%ocean_matrix%applied%S_ocean_corr_ext,  (/1, 1, 1, ti /))
     ELSEIF (field_name == 'PICO_boxes') THEN
       CALL write_data_to_file_int_2D( ncid, nx, ny,     id_var,              region%BMB%PICO_k, (/ 1, 1,   ti /))
+    ELSEIF (field_name == 'T_ocean_base') THEN
+      CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%BMB%T_ocean_base, (/1, 1,   ti /))
 
     ! Some quantities that can be provided as input for an offline 3D GIA model
     ELSEIF (C%choice_GIA_model == '3DGIA') THEN !CvC  
@@ -1170,6 +1176,10 @@ CONTAINS
       CALL crash('unknown choice_forcing_method "' // TRIM(C%choice_forcing_method) // '"!')
     END IF
 
+    IF (C%do_ocean_temperature_inversion) THEN
+      CALL create_double_var( region%restart%netcdf%ncid, region%restart%netcdf%name_var_T_ocean_base,               [x, y,       t], region%restart%netcdf%id_var_T_ocean_base,               long_name='Inverse ocean temperature',  units='K')
+    END IF
+
   ! ===== End of fields definition =====
   ! ====================================
 
@@ -1570,7 +1580,9 @@ CONTAINS
       CALL create_double_var( region%help_fields%ncid, 'S_ocean_3D',               [x, y, zo, t], id_var, long_name='3-D ocean salinity', units='PSU')
     ELSEIF (field_name == 'PICO_boxes') THEN
       CALL create_int_var(    region%help_fields%ncid, 'PICO_boxes',               [x, y,    t], id_Var, long_name='PICO ocean boxes')
-
+    ELSEIF (field_name == 'T_ocean_base') THEN
+      CALL create_double_var( region%help_fields%ncid, 'T_ocean_base',               [x, y, t], id_var, long_name='Inverted ocean temperature', units='K')
+      
     ! Some quantities that can be provided as input for an offline 3D GIA model !CvC  
     ELSEIF (C%choice_GIA_model == '3DGIA') THEN 
       IF (field_name == 'reference_surface_load') THEN

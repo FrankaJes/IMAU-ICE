@@ -607,7 +607,16 @@ MODULE configuration_module
   REAL(dp)            :: BMB_max_config                              = 50._dp                           ! Maximum amount of allowed basal melt     [mie/yr]
   REAL(dp)            :: BMB_min_config                              = 5._dp                            ! Maximum amount of allowed basal freezing [mie/yr]
 
-  CHARACTER(LEN=256)  :: choice_basin_scheme_NAM_config              = 'none'                           ! Choice of basin ID scheme; can be 'none' or 'file'
+  LOGICAL             :: do_ocean_temperature_inversion_config       = .FALSE.                          ! Whether or not to invert for ocean temperatures in the Bernales202X shelf BMB model
+  REAL(dp)            :: ocean_temperature_inv_t_start_config        = -9.9E9_dp                        ! Minimum model time when the inversion is allowed
+  REAL(dp)            :: ocean_temperature_inv_t_end_config          = +9.9E9_dp                        ! Maximum model time when the inversion is allowed
+  INTEGER             :: T_base_window_size_config                   = 200                              ! Number of previous time steps used to compute a running average of inverted T_ocean_base
+
+  LOGICAL             :: BMB_inv_use_restart_field_config            = .FALSE.                          ! Whether or not to use BMB_shelf field from a the restart file
+  REAL(dp)            :: BMB_inv_scale_shelf_config                  = 200._dp                          ! Scaling constant for inversion procedure over shelves [m]
+  REAL(dp)            :: BMB_inv_scale_ocean_config                  = 100._dp                          ! Scaling constant for inversion procedure over open ocean [m]
+ 
+ CHARACTER(LEN=256)  :: choice_basin_scheme_NAM_config              = 'none'                           ! Choice of basin ID scheme; can be 'none' or 'file'
   CHARACTER(LEN=256)  :: choice_basin_scheme_EAS_config              = 'none'
   CHARACTER(LEN=256)  :: choice_basin_scheme_GRL_config              = 'none'
   CHARACTER(LEN=256)  :: choice_basin_scheme_ANT_config              = 'none'
@@ -1332,6 +1341,15 @@ MODULE configuration_module
     LOGICAL                             :: do_asynchronous_BMB
     REAL(dp)                            :: BMB_max
     REAL(dp)                            :: BMB_min
+
+    LOGICAL                             :: do_ocean_temperature_inversion
+    REAL(dp)                            :: ocean_temperature_inv_t_start
+    REAL(dp)                            :: ocean_temperature_inv_t_end
+    INTEGER                             :: T_base_window_size
+
+    LOGICAL                             :: BMB_inv_use_restart_field
+    REAL(dp)                            :: BMB_inv_scale_shelf
+    REAL(dp)                            :: BMB_inv_scale_ocean
 
     CHARACTER(LEN=256)                  :: choice_basin_scheme_NAM
     CHARACTER(LEN=256)                  :: choice_basin_scheme_EAS
@@ -2121,6 +2139,13 @@ CONTAINS
                      do_asynchronous_BMB_config,                      &
                      BMB_max_config,                                  &
                      BMB_min_config,                                  &
+                     do_ocean_temperature_inversion_config,           &
+                     ocean_temperature_inv_t_start_config,            &
+                     ocean_temperature_inv_t_end_config,              &
+                     T_base_window_size_config,                       &
+                     BMB_inv_use_restart_field_config,                &
+                     BMB_inv_scale_shelf_config,                      &
+                     BMB_inv_scale_ocean_config,                      &
                      choice_basin_scheme_NAM_config,                  &
                      choice_basin_scheme_EAS_config,                  &
                      choice_basin_scheme_GRL_config,                  &
@@ -2972,6 +2997,15 @@ CONTAINS
     C%do_asynchronous_BMB                      = do_asynchronous_BMB_config
     C%BMB_max                                  = BMB_max_config
     C%BMB_min                                  = BMB_min_config
+    
+    C%do_ocean_temperature_inversion           = do_ocean_temperature_inversion_config
+    C%ocean_temperature_inv_t_start            = ocean_temperature_inv_t_start_config
+    C%ocean_temperature_inv_t_end              = ocean_temperature_inv_t_end_config
+    C%T_base_window_size                       = T_base_window_size_config
+
+    C%BMB_inv_use_restart_field                = BMB_inv_use_restart_field_config
+    C%BMB_inv_scale_shelf                      = BMB_inv_scale_shelf_config
+    C%BMB_inv_scale_ocean                      = BMB_inv_scale_ocean_config
 
     C%choice_basin_scheme_NAM                  = choice_basin_scheme_NAM_config
     C%choice_basin_scheme_EAS                  = choice_basin_scheme_EAS_config

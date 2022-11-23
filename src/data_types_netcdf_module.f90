@@ -98,6 +98,12 @@ MODULE data_types_netcdf_module
     CHARACTER(LEN=256) :: name_var_dT_glob_history          = 'dT_glob_history        '
     CHARACTER(LEN=256) :: name_var_dT_glob_inverse_history  = 'dT_glob_inverse_history'
     CHARACTER(LEN=256) :: name_var_CO2_inverse_history      = 'CO2_inverse_history    '
+    
+    ! Ocean temperature inversion
+    INTEGER :: id_var_T_ocean_base
+    
+    CHARACTER(LEN=256) :: name_var_T_ocean_base      = 'T_ocean_base    '
+
 
   END TYPE type_netcdf_restart
 
