@@ -4,8 +4,8 @@
   ! ====================
 
   start_time_of_run_config                    = 0.0                           ! Start time (in years) of the simulations
-  end_time_of_run_config                      = 110000.0                           ! End   time (in years) of the simulations
-  dt_coupling_config                          = 1000.0                         ! Interval of coupling (in years) between the four ice-sheets
+  end_time_of_run_config                      = 100000.0                           ! End   time (in years) of the simulations
+  dt_coupling_config                          = 1.0                         ! Interval of coupling (in years) between the four ice-sheets
   dt_max_config                               = 1.0                              ! Maximum time step (in years) of the ice model
   dt_min_config                               = 0.01                             ! Smallest allowed time step [yr]
   dt_startup_phase_config                     = 0.0                              ! Length of time window (in years) after start_time and before end_time when dt = dt_min, to ensure smooth restarts
@@ -53,8 +53,8 @@
   ! This works fine locally, on LISA its better to use a fixed folder name.
   ! =======================================================================
 
-  create_procedural_output_dir_config         = .FALSE.                           ! Automatically create an output directory with a procedural name (e.g. results_20210720_001/)
-  fixed_output_dir_config                     = 'Spinup_ANT'               ! If not, create a directory with this name instead (stops the program if this directory already exists)
+  create_procedural_output_dir_config         = .TRUE.                           ! Automatically create an output directory with a procedural name (e.g. results_20210720_001/)
+  fixed_output_dir_config                     = ''               ! If not, create a directory with this name instead (stops the program if this directory already exists)
   fixed_output_dir_suffix_config              = ''                               ! Suffix to put after the fixed output directory name, useful when doing ensemble runs with the template+variation set-up
   do_write_regional_scalar_output_config      = .TRUE.
   do_write_global_scalar_output_config        = .TRUE.
@@ -204,7 +204,7 @@
   ! Ice dynamics - velocity
   ! =======================
 
-  choice_ice_dynamics_config                  = 'SIA/SSA'                        ! Choice of ice-dynamica approximation: "none" (= fixed geometry), "SIA", "SSA", "SIA/SSA", "DIVA"
+  choice_ice_dynamics_config                  = 'SIA'                        ! Choice of ice-dynamica approximation: "none" (= fixed geometry), "SIA", "SSA", "SIA/SSA", "DIVA"
   n_flow_config                               = 3.0                              ! Exponent in Glen's flow law
   m_enh_sheet_config                          = 1.0                              ! Ice flow enhancement factor for grounded ice
   m_enh_shelf_config                          = 1.0                              ! Ice flow enhancement factor for floating ice
@@ -316,9 +316,9 @@
   r_smooth_phi_restart_config                 = 0.5                              ! Prescribed bed roughness smoothing radius (in number of grid cells)
 
   ! Basal inversion
-  do_BIVgeo_config                            = .TRUE.                          ! Whether or not to perform a geometry-based basal inversion (following Pollard & DeConto, 2012)
-  BIVgeo_t_start_config                       = 0                           ! Minimum model time when the inversion is allowed
-  BIVgeo_t_end_config                         = 100000                           ! Maximum model time when the inversion is allowed
+  do_BIVgeo_config                            = .FALSE.                          ! Whether or not to perform a geometry-based basal inversion (following Pollard & DeConto, 2012)
+  BIVgeo_t_start_config                       = -9.9E9                           ! Minimum model time when the inversion is allowed
+  BIVgeo_t_end_config                         = +9.9E9                           ! Maximum model time when the inversion is allowed
   choice_BIVgeo_method_config                 = 'Bernales2017'                    ! Choice of geometry-based inversion method: "PDC2012", "Lipscomb2021", "CISM+", "Berends2022", "Bernales2017"
   BIVgeo_dt_config                            = 5.0                              ! Time step      for bed roughness updates in the PDC2012 geometry-based basal inversion method [yr]
   BIVgeo_PDC2012_hinv_config                  = 500.0                            ! Scaling factor for bed roughness updates in the PDC2012 geometry-based basal inversion method [m]
@@ -338,7 +338,7 @@
   BIVgeo_Berends2022_phimax_config            = 30.0                             ! Largest  allowed value for the inverted till friction angle phi
   BIVgeo_target_velocity_filename_config      = ''                               ! NetCDF file where the target velocities are read in the CISM+ and Berends2022 geometry/velocity-based basal inversion methods
   BIVgeo_filename_output_config               = 'bed_roughness_inv.nc'           ! NetCDF file where the final inverted basal roughness will be saved
-  BIVgeo_Bernales2017_hinv_config             = 10000.0                            ! Scaling factor for bed roughness updates in the Bernales (2017) geometry-based basal inversion method [m]
+  BIVgeo_Bernales2017_hinv_config             = 1000.0                            ! Scaling factor for bed roughness updates in the Bernales (2017) geometry-based basal inversion method [m]
   BIVgeo_Bernales2017_tol_diff_config         = 0.0                              ! Minimum ice thickness difference [m] that triggers inversion (.OR. &)
   BIVgeo_Bernales2017_tol_frac_config         = 0.0                              ! Minimum ratio between ice thickness difference and reference value that triggers inversion
 
@@ -512,7 +512,7 @@
   ! Basal mass balance
   ! ==================
 
-  choice_BMB_shelf_model_config               = 'Favier2019_quad'                ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
+  choice_BMB_shelf_model_config               = 'uniform'                ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
   choice_idealised_BMB_shelf_config           = 'MISMIP+'
   choice_BMB_sheet_model_config               = 'uniform'                        ! Choice of sheet BMB: "uniform"
   BMB_shelf_uniform_config                    = 0.0                              ! Uniform shelf BMB, applied when choice_BMB_shelf_model = "uniform" [mie/yr]
@@ -522,7 +522,7 @@
   BMB_max_config                              = 50.0                             ! Maximum amount of allowed basal melt     [mie/yr]
   BMB_min_config                              = 5.0                              ! Maximum amount of allowed basal freezing [mie/yr]
 
-  do_ocean_temperature_inversion_config       = .TRUE.                           ! Whether or not to invert for ocean temperatures in the Bernales202X shelf BMB model
+  do_ocean_temperature_inversion_config       = .FALSE.                           ! Whether or not to invert for ocean temperatures in the Bernales202X shelf BMB model
   ocean_temperature_inv_t_start_config        = 0.0                              ! Minimum model time when the inversion is allowed
   ocean_temperature_inv_t_end_config          = 100000.0                          ! Maximum model time when the inversion is allowed
   T_base_window_size_config                   = 100                              ! Number of previous time steps used to compute a running average of inverted T_ocean_base

@@ -485,7 +485,8 @@ CONTAINS
         ! (see also Huybrechts & de Wolde, 1999)
         sup_imp_wat  = 0.012_dp * MAX(0._dp, T0 - climate%T2m( m,j,i))
         liquid_water = SMB%Rainfall( m,j,i) + SMB%Melt( m,j,i)
-        SMB%Refreezing( m,j,i) = MIN( MIN( sup_imp_wat, liquid_water), climate%Precip( m,j,i))
+        ! SMB%Refreezing( m,j,i) = MIN( MIN( sup_imp_wat, liquid_water), climate%Precip( m,j,i))
+        SMB%Refreezing( m,j,i) = MIN( sup_imp_wat, liquid_water)
         IF (ice%mask_ice_a( j,i) == 0 .OR. mask_noice( j,i) == 1) SMB%Refreezing( m,j,i) = 0._dp
 
         ! Calculate runoff and total SMB

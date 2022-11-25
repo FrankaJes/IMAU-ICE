@@ -2146,7 +2146,7 @@ CONTAINS
     INTEGER                                            :: wmask
     REAL(dp), DIMENSION(:,:  ), POINTER                ::  dz
     INTEGER                                            :: wdz
-    REAL(dp), PARAMETER                                :: sigma = 500._dp
+    REAL(dp), PARAMETER                                :: sigma = 10000._dp
     REAL(dp)                                           :: h_scale, h_delta, h_dfrac
 
     ! Add routine to path
