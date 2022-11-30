@@ -690,6 +690,15 @@ MODULE data_types_module
     TYPE(type_ocean_snapshot_regional)      :: GCM_warm                      ! Warm snapshot
     TYPE(type_ocean_snapshot_regional)      :: GCM_cold                      ! Cold snapshot
     TYPE(type_ocean_snapshot_regional)      :: applied                       ! Final applied ocean
+    
+    TYPE(type_ocean_snapshot_regional)      :: baseline                      ! baseline for the ISMIP style forcing
+    TYPE(type_ocean_snapshot_regional)      :: anomaly_t0                    ! snapshot of first time frame
+    TYPE(type_ocean_snapshot_regional)      :: anomaly_t1                    ! snapshot of second time frame
+    
+    REAL(dp),                   POINTER     :: timeframe_t0                  ! timestamp of first time frame
+    REAL(dp),                   POINTER     :: timeframe_t1                  ! timestamp of second time frame
+    INTEGER :: wtimeframe_t0, wtimeframe_t1
+
 
   END TYPE type_ocean_matrix_regional
 

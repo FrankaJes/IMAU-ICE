@@ -650,6 +650,84 @@ MODULE data_types_netcdf_module
     ! Variables names for ocean temperature and salinity are set through the config!
 
   END TYPE type_netcdf_global_ocean_data
+  
+  TYPE type_netcdf_regional_ocean_data_3D
+    ! For reading an input file containing ocean data on a xy-grid
+
+    CHARACTER(LEN=256) :: filename
+
+    ! ID for NetCDF file:
+    INTEGER :: ncid
+
+  ! Dimensions
+  ! ==========
+
+    INTEGER :: id_dim_x
+    INTEGER :: id_dim_y
+    INTEGER :: id_dim_z_ocean
+
+    CHARACTER(LEN=256) :: name_dim_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_dim_y                     = 'y                    '
+    CHARACTER(LEN=256) :: name_dim_z_ocean               = 'z_ocean              '
+
+  ! Variables
+  ! =========
+
+    ! Dimensions
+    INTEGER :: id_var_x
+    INTEGER :: id_var_y
+    INTEGER :: id_var_z_ocean
+
+    CHARACTER(LEN=256) :: name_var_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_var_y                     = 'y                    '
+    CHARACTER(LEN=256) :: name_var_z_ocean               = 'z_ocean              '
+
+    ! Field variables
+    INTEGER :: id_var_T_ocean
+    INTEGER :: id_var_S_ocean
+
+    CHARACTER(LEN=256) :: name_var_T_ocean              = 'T                   '
+    CHARACTER(LEN=256) :: name_var_S_ocean              = 'S                   '
+
+  END TYPE type_netcdf_regional_ocean_data_3D
+  
+  TYPE type_netcdf_regional_ocean_anomaly_2D
+    ! For reading an input file containing ocean data on a xy-grid
+
+    CHARACTER(LEN=256) :: filename
+
+    ! ID for NetCDF file:
+    INTEGER :: ncid
+
+  ! Dimensions
+  ! ==========
+
+    INTEGER :: id_dim_x
+    INTEGER :: id_dim_y
+
+    CHARACTER(LEN=256) :: name_dim_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_dim_y                     = 'y                    '
+
+  ! Variables
+  ! =========
+
+    ! Dimensions
+    INTEGER :: id_var_x
+    INTEGER :: id_var_y
+
+    CHARACTER(LEN=256) :: name_var_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_var_y                     = 'y                    '
+
+    ! Field variables
+    INTEGER :: id_var_dT_ocean
+    INTEGER :: id_var_dS_ocean
+    
+    CHARACTER(LEN=256) :: name_var_dT_ocean              = 'dT                   '
+    CHARACTER(LEN=256) :: name_var_dS_ocean              = 'dS                   '
+
+    ! Variables names for ocean temperature and salinity are set through the config!
+
+  END TYPE type_netcdf_regional_ocean_anomaly_2D
 
   TYPE type_netcdf_insolation
     ! For reading an input file containing an insolation history reconstruction (e.g. Lasker et al., 2004),

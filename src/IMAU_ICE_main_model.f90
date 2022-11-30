@@ -539,17 +539,6 @@ CONTAINS
     CALL calculate_icesheet_volume_and_area(region)
     CALL write_regional_scalar_data( region, C%start_time_of_run)
 
-    ! ===
-    ! === If we're running with choice_ice_dynamics == "none", calculate a velocity field
-    ! === once during initialisation (so that the thermodynamics are solved correctly)
-    ! ===
-
-    IF (C%choice_ice_dynamics == 'none') THEN
-      C%choice_ice_dynamics = 'DIVA'
-      CALL solve_DIVA( region%grid, region%ice)
-      C%choice_ice_dynamics = 'none'
-    END IF
-
     IF (par%master) WRITE (0,*) ' Finished initialising model region ', region%name, '.'
 
     ! Finalise routine path

@@ -3889,6 +3889,250 @@ CONTAINS
 
   END SUBROUTINE read_PD_obs_global_ocean_file
 
+  ! regional ocean file baseline
+  SUBROUTINE inquire_regional_ocean_file_3D( netcdf, nx, ny, nz_ocean)
+    ! Check if the right dimensions and variables are present in the file.
+
+    IMPLICIT NONE
+
+    ! Input/output variables:
+    TYPE(type_netcdf_regional_ocean_data_3D), INTENT(INOUT) :: netcdf
+    INTEGER, INTENT(OUT)                                    :: nx, ny, nz_ocean
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'inquire_regional_ocean_file_3D'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+    ! Inquire dimensions id's. Check that all required dimensions exist return their lengths.
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_x,     nx,         netcdf%id_dim_x    )
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_y,     ny,         netcdf%id_dim_y    )
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_z_ocean,     nz_ocean,         netcdf%id_dim_z_ocean    )
+    
+    ! Inquire variable id's. Make sure that each variable has the correct dimensions:
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_x,     (/ netcdf%id_dim_x     /), netcdf%id_var_x    )
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_y,     (/ netcdf%id_dim_y     /), netcdf%id_var_y    )
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_z_ocean,     (/ netcdf%id_dim_z_ocean     /), netcdf%id_var_z_ocean    )
+
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_T_ocean, (/ netcdf%id_dim_x, netcdf%id_dim_y, netcdf%id_dim_z_ocean /),  netcdf%id_var_T_ocean)
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_S_ocean, (/ netcdf%id_dim_x, netcdf%id_dim_y, netcdf%id_dim_z_ocean /),  netcdf%id_var_S_ocean)
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE inquire_regional_ocean_file_3D
+ 
+  SUBROUTINE read_regional_ocean_file_3D( netcdf, x, y, z_ocean, TO, SO)
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_netcdf_regional_ocean_data_3D), INTENT(INOUT) :: netcdf
+    REAL(dp), DIMENSION(:), INTENT(OUT)                     :: x, y, z_ocean
+    REAL(dp), DIMENSION(:,:,:), INTENT(OUT)                 :: TO, SO
+
+    
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_regional_ocean_file_3D'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+    ! Read the data
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_x,     x,         start = (/ 1       /) ))
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_y,     y,         start = (/ 1       /) ))
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_z_ocean,     z_ocean,         start = (/ 1       /) ))
+
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_T_ocean, TO, start = (/ 1, 1, 1/) ))
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_S_ocean, SO, start = (/ 1, 1, 1/) ))
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE read_regional_ocean_file_3D
+  
+    ! regional ocean anomalies
+  SUBROUTINE inquire_regional_ocean_temperature_anomaly_2D( netcdf, nx, ny)
+    ! Check if the right dimensions and variables are present in the file.
+
+    IMPLICIT NONE
+
+    ! Input/output variables:
+    TYPE(type_netcdf_regional_ocean_anomaly_2D), INTENT(INOUT) :: netcdf
+    INTEGER, INTENT(OUT)                                       :: nx, ny
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'inquire_regional_ocean_temperature_anomaly_2D'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+    ! Inquire dimensions id's. Check that all required dimensions exist return their lengths.
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_x,     nx,         netcdf%id_dim_x    )
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_y,     ny,         netcdf%id_dim_y    )
+
+    ! Inquire variable id's. Make sure that each variable has the correct dimensions:
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_x,     (/ netcdf%id_dim_x     /), netcdf%id_var_x    )
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_y,     (/ netcdf%id_dim_y     /), netcdf%id_var_y    )
+
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_dT_ocean, (/ netcdf%id_dim_x, netcdf%id_dim_y /),  netcdf%id_var_dT_ocean)
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE inquire_regional_ocean_temperature_anomaly_2D
+  
+  SUBROUTINE read_regional_ocean_temperature_anomaly_2D( netcdf, x, y, aTO)
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_netcdf_regional_ocean_anomaly_2D), INTENT(INOUT) :: netcdf
+    REAL(dp), DIMENSION(:), INTENT(OUT)                     :: x, y
+    REAL(dp), DIMENSION(:,:), INTENT(OUT)                   :: aTO
+
+    
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_regional_ocean_temperature_anomaly_2D'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+    ! Read the data
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_x,     x,         start = (/ 1       /) ))
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_y,     y,         start = (/ 1       /) ))
+
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_dT_ocean, aTO, start = (/ 1, 1/) ))
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE read_regional_ocean_temperature_anomaly_2D
+  
+  SUBROUTINE inquire_regional_ocean_salinity_anomaly_2D( netcdf, nx, ny)
+    ! Check if the right dimensions and variables are present in the file.
+
+    IMPLICIT NONE
+
+    ! Input/output variables:
+    TYPE(type_netcdf_regional_ocean_anomaly_2D), INTENT(INOUT) :: netcdf
+    INTEGER, INTENT(OUT)                                       :: nx, ny
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'inquire_regional_ocean_salinity_anomaly_2D'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+    ! Inquire dimensions id's. Check that all required dimensions exist return their lengths.
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_x,     nx,         netcdf%id_dim_x    )
+    CALL inquire_dim( netcdf%ncid, netcdf%name_dim_y,     ny,         netcdf%id_dim_y    )
+
+    ! Inquire variable id's. Make sure that each variable has the correct dimensions:
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_x,     (/ netcdf%id_dim_x     /), netcdf%id_var_x    )
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_y,     (/ netcdf%id_dim_y     /), netcdf%id_var_y    )
+
+    CALL inquire_double_var( netcdf%ncid, netcdf%name_var_dS_ocean, (/ netcdf%id_dim_x, netcdf%id_dim_y /),  netcdf%id_var_dS_ocean)
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE inquire_regional_ocean_salinity_anomaly_2D
+  
+  SUBROUTINE read_regional_ocean_salinity_anomaly_2D( netcdf, x, y, aSO)
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_netcdf_regional_ocean_anomaly_2D), INTENT(INOUT) :: netcdf
+    REAL(dp), DIMENSION(:), INTENT(OUT)                        :: x, y
+    REAL(dp), DIMENSION(:,:), INTENT(OUT)                      :: aSO
+
+    
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_regional_ocean_salinity_anomaly_2D'
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( netcdf%filename, netcdf%ncid)
+
+    ! Read the data
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_x,     x,         start = (/ 1       /) ))
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_y,     y,         start = (/ 1       /) ))
+
+    CALL handle_error(nf90_get_var( netcdf%ncid, netcdf%id_var_dS_ocean, aSO, start = (/ 1, 1/) ))
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE read_regional_ocean_salinity_anomaly_2D
+  
   ! GCM global ocean (ocean matrix snapshots)
   SUBROUTINE inquire_GCM_global_ocean_file( ocn)
     ! Check if the right dimensions and variables are present in the file.

@@ -1362,12 +1362,16 @@ CONTAINS
     CALL init_routine( routine_name)
 
     IF (.NOT. C%do_ocean_temperature_inversion) THEN
-      ! Calculate ocean temperature and freezing point at the base of the shelf
+      ! Calculate ocean temperature at the base of the shelf
       CALL calc_ocean_temperature_at_shelf_base(    grid, ice, ocean, BMB)
     END IF
     
     CALL calc_ocean_freezing_point_at_shelf_base( grid, ice, ocean, BMB)
-    CALL calc_ocean_salinity_at_shelf_base(    grid, ice, ocean, BMB)
+    
+    IF (C%do_ocean_temperature_inversion) THEN
+      ! Calculate ocean salinity at the base of the shelf
+      CALL calc_ocean_salinity_at_shelf_base(    grid, ice, ocean, BMB)
+    END IF
 
     DO i = grid%i1, grid%i2
     DO j = 1, grid%ny

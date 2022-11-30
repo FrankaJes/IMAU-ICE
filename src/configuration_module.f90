@@ -480,13 +480,21 @@ MODULE configuration_module
   ! Ocean
   ! =====
 
-  CHARACTER(LEN=256)  :: choice_ocean_model_config                   = 'matrix_warm_cold'               ! Choice of ocean model: "none", "idealised", "uniform_warm_cold", "PD_obs", "matrix_warm_cold"
+  CHARACTER(LEN=256)  :: choice_ocean_model_config                   = 'matrix_warm_cold'               ! Choice of ocean model: "none", "idealised", "uniform_warm_cold", "PD_obs", "matrix_warm_cold", "ISMIP-style"
   CHARACTER(LEN=256)  :: choice_idealised_ocean_config               = 'MISMIP+_warm'                   ! Choice of idealised ocean: 'MISMIP+_warm', 'MISMIP+_cold', 'MISOMIP1', 'Reese2018_ANT'
 
   ! NetCDF file containing the present-day observed ocean (WOA18) (NetCDF)
   CHARACTER(LEN=256)  :: filename_PD_obs_ocean_config                = '/Users/berends/Documents/Datasets/WOA/woa18_decav_ts00_04_remapcon_r360x180_NaN.nc'
   CHARACTER(LEN=256)  :: name_ocean_temperature_obs_config           = 't_an' ! E.g. objectively analysed mean (t_an) or statistical mean (t_mn)
   CHARACTER(LEN=256)  :: name_ocean_salinity_obs_config              = 's_an' ! E.g. objectively analysed mean (s_an) or statistical mean (s_mn)
+  LOGICAL             :: use_inverted_ocean_config                   = .FALSE.                          ! Whether to combine the PD ocean data with inverted values
+  
+  ! ISMIP-style Cvc
+  CHARACTER(LEN=256)  :: ISMIP_ocean_filename_baseline_config        = ''                              ! NetCDF file containing the baseline ocean for the ISMIP-style ocean
+  CHARACTER(LEN=256)  :: ISMIP_ocean_foldername_aTO_config           = ''                              ! Folder containing the single timeframe NetCDF files of the ocean temperature anomaly
+  CHARACTER(LEN=256)  :: ISMIP_ocean_basefilename_aTO_config         = ''                              ! Filename without the year (e.g. if the actual file is "aTO-1950.nc",   then this variable should be "aTO-"
+  CHARACTER(LEN=256)  :: ISMIP_ocean_foldername_aSO_config           = ''                              ! Folder containing the single timeframe NetCDF files of the ocean salinity anomaly
+  CHARACTER(LEN=256)  :: ISMIP_ocean_basefilename_aSO_config         = ''                              ! Filename without the year (e.g. if the actual file is "aSO-1950.nc", then this variable should be "aSO-"
 
   ! GCM snapshots in the matrix_warm_cold option
   CHARACTER(LEN=256)  :: filename_GCM_ocean_snapshot_PI_config       = '/Users/berends/Documents/Datasets/COSMOS_ocean_examples/COSMOS_PI_oceanTS_prep.nc'
@@ -1240,6 +1248,14 @@ MODULE configuration_module
     CHARACTER(LEN=256)                  :: filename_PD_obs_ocean
     CHARACTER(LEN=256)                  :: name_ocean_temperature_obs
     CHARACTER(LEN=256)                  :: name_ocean_salinity_obs
+    LOGICAL                             :: use_inverted_ocean
+
+    ! ISMIP-style Cvc
+    CHARACTER(LEN=256)                  :: ISMIP_ocean_filename_baseline
+    CHARACTER(LEN=256)                  :: ISMIP_ocean_foldername_aTO
+    CHARACTER(LEN=256)                  :: ISMIP_ocean_basefilename_aTO
+    CHARACTER(LEN=256)                  :: ISMIP_ocean_foldername_aSO
+    CHARACTER(LEN=256)                  :: ISMIP_ocean_basefilename_aSO
 
     ! GCM snapshots in the matrix_warm_cold option
     CHARACTER(LEN=256)                  :: filename_GCM_ocean_snapshot_PI
@@ -2066,6 +2082,12 @@ CONTAINS
                      filename_PD_obs_ocean_config,                    &
                      name_ocean_temperature_obs_config,               &
                      name_ocean_salinity_obs_config,                  &
+                     use_inverted_ocean_config,                       &
+                     ISMIP_ocean_filename_baseline_config,            &
+                     ISMIP_ocean_foldername_aTO_config,               &
+                     ISMIP_ocean_basefilename_aTO_config,             &
+                     ISMIP_ocean_foldername_aSO_config,               &
+                     ISMIP_ocean_basefilename_aSO_config,             &
                      filename_GCM_ocean_snapshot_PI_config,           &
                      filename_GCM_ocean_snapshot_warm_config,         &
                      filename_GCM_ocean_snapshot_cold_config,         &
@@ -2898,6 +2920,14 @@ CONTAINS
     C%filename_PD_obs_ocean                    = filename_PD_obs_ocean_config
     C%name_ocean_temperature_obs               = name_ocean_temperature_obs_config
     C%name_ocean_salinity_obs                  = name_ocean_salinity_obs_config
+    C%use_inverted_ocean                       = use_inverted_ocean_config
+    
+    ! ISMIP-style ocean
+    C%ISMIP_ocean_filename_baseline            = ISMIP_ocean_filename_baseline_config
+    C%ISMIP_ocean_foldername_aTO               = ISMIP_ocean_foldername_aTO_config
+    C%ISMIP_ocean_basefilename_aTO             = ISMIP_ocean_basefilename_aTO_config
+    C%ISMIP_ocean_foldername_aSO               = ISMIP_ocean_foldername_aSO_config
+    C%ISMIP_ocean_basefilename_aSO             = ISMIP_ocean_basefilename_aSO_config
 
     ! GCM snapshots in the matrix_warm_cold option
     C%filename_GCM_ocean_snapshot_PI           = filename_GCM_ocean_snapshot_PI_config
