@@ -17,7 +17,7 @@ MODULE IMAU_ICE_main_model
                                                  type_ocean_matrix_global
   USE utilities_module,                    ONLY: check_for_NaN_dp_1D,  check_for_NaN_dp_2D,  check_for_NaN_dp_3D, &
                                                  check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
-                                                 inverse_oblique_sg_projection, surface_elevation
+                                                 inverse_oblique_sg_projection, surface_elevation, is_floating
   USE parameters_module
   USE reference_fields_module,             ONLY: initialise_reference_geometries
   USE netcdf_module,                       ONLY: debug, write_to_debug_file, initialise_debug_fields, create_debug_file, associate_debug_fields, &
@@ -229,7 +229,7 @@ CONTAINS
     IF (region%time == C%end_time_of_run) THEN
       ! Compute total_surface_load for 3DGIA model ! CvC
       IF (C%choice_GIA_model == '3DGIA') THEN 
-        CALL calculate_output_for_3D_GIA_model(region%ice)
+        CALL calculate_output_for_3D_GIA_model(region%grid, region%ice)
       END IF
       ! Write to NetCDF output one last time at the end of the simulation
       CALL write_to_restart_file(     region, forcing)
@@ -285,54 +285,196 @@ CONTAINS
   ! Finalise routine path
     CALL finalise_routine( routine_name)
 	
-  END SUBROUTINE
+  END SUBROUTINE update_Hb_with_3D_GIA_model_output
 
-  SUBROUTINE calculate_output_for_3D_GIA_model(ice)
+  SUBROUTINE calculate_output_for_3D_GIA_model(grid, ice)
     ! Caroline van Calcar 08/2022
   
     IMPLICIT NONE  
     
     ! In/output variables:
     TYPE(type_ice_model),             INTENT(INOUT)     :: ice
+    TYPE(type_grid),                  INTENT(IN)        :: grid
+
 
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                       :: routine_name = 'calculate_output_for_3D_GIA_model'
+    INTEGER                                             :: i,j
 
     ! Add routine to path
     CALL init_routine( routine_name)
 
-    IF (par%master) THEN
-      ice%relative_surface_load = 0._dp
-      ice%total_surface_load = 0._dp
-      ice%Hs_float_for3DGIA = 0._dp
-      ice%Hi_load = 0._dp
+    ! IF (par%master) THEN
+      ! ice%relative_surface_load = 0._dp
+      ! ice%total_surface_load = 0._dp
+      ! ice%Hs_float_for3DGIA = 0._dp
+      ! ice%Hi_load = 0._dp
 
-      ice%Hs_float_for3DGIA = ice%Hb_a + (ice%SL_a - ice%Hb_a) * seawater_density / ice_density
-      WHERE (ice%Hs_a > ice%Hs_float_for3DGIA)
-        ice%Hi_load = ice%Hs_a - ice%Hb_a
-      END WHERE
-      WHERE (ice%Hi_load < 0._dp)
-        ice%Hi_load = 0._dp
-      END WHERE
+      ! ice%Hs_float_for3DGIA = ice%Hb_a + (ice%SL_a - ice%Hb_a) * seawater_density / ice_density
+      ! WHERE (ice%Hs_a > ice%Hs_float_for3DGIA)
+        ! ice%Hi_load = ice%Hs_a - ice%Hb_a
+      ! END WHERE
+      ! WHERE (ice%Hi_load < 0._dp)
+        ! ice%Hi_load = 0._dp
+      ! END WHERE
       
-      WHERE (ice%Hi_load > 0 .OR. ice%Initial_ice_load > 0)
-        ice%ocean_depth_3DGIA = 0._dp
-        ice%ocean_depth_3DGIA = -ice%Hb_a + ice%SL_a(1,1) ! -Hb_init + dGeoid - dHb, -Hb_init - dHb = -Hb
-        WHERE (ice%ocean_depth_3DGIA < 0)
-          ice%ocean_depth_3DGIA = 0
-        END WHERE
+      ! WHERE (ice%Hi_load > 0)
+        ! ice%ocean_depth_3DGIA = 0._dp
+        ! ice%ocean_depth_3DGIA = -ice%Hb_a + ice%SL_a(1,1) ! -Hb_init + dGeoid - dHb, -Hb_init - dHb = -Hb
+        ! WHERE (ice%ocean_depth_3DGIA < 0)
+          ! ice%ocean_depth_3DGIA = 0
+        ! END WHERE
         
-        ice%total_surface_load = ice%Hi_load - seawater_density / ice_density * ice%ocean_depth_3DGIA
-        ice%relative_surface_load = ice%total_surface_load - ice%reference_surface_load
-      END WHERE
+        ! ice%total_surface_load = ice%Hi_load - seawater_density / ice_density * ice%ocean_depth_3DGIA
+        ! ice%relative_surface_load = ice%total_surface_load - ice%reference_surface_load
+      ! END WHERE
+    ! END IF
+    ! CALL SYNC
+
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
     
-    END IF
+      ! Absolute surface load
+      IF (ice%mask_ocean_a( j,i) == 1) THEN
+        ice%total_surface_load( j,i) = (ice%SL_a( j,i) - ice%Hb_a( j,i)) * seawater_density / ice_density
+      ELSE
+        ice%total_surface_load( j,i) = ice%Hi_a( j,i)
+      END IF
+      
+    END DO
+    END DO
     CALL SYNC
+    
+    ! Calculate the relative surface load
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+      ice%relative_surface_load( j,i) = ice%total_surface_load( j,i) - ice%reference_surface_load( j,i)
+    END DO
+    END DO
+    CALL sync
+    
+    ! Mask the reference surface load
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny   
+      IF (ice%mask_ref(j,i) == 1) THEN
+        ice%relative_surface_load(j,i) = 0._dp
+      END IF
+    END DO
+    END DO    
+    CALL sync
     
     ! Finalise routine path
     CALL finalise_routine( routine_name)
     
   END SUBROUTINE calculate_output_for_3D_GIA_model
+  
+  SUBROUTINE read_dHb_3D_file( grid, ice)
+  ! Caroline van Calcar 08/2022
+  
+    IMPLICIT NONE
+    
+    ! in/output variables:
+    TYPE(type_grid),                  INTENT(IN)        :: grid
+    TYPE(type_ice_model),             INTENT(INOUT)     :: ice
+    
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                       :: routine_name = 'read_dHb_3D_file'
+    INTEGER                                             :: i,j
+    
+    CALL init_routine( routine_name)
+    
+    IF (par%master) THEN
+      open (91, file = TRIM( C%deformation_foldername) // '/dHb_3D.dat', status = 'old')
+        do i = 1,grid%NX
+          read(91,*) (ice%dHb_3D(j,i),j=1,grid%NY)
+        enddo
+      close(91)
+    END IF
+    CALL SYNC
+    
+    CALL finalise_routine( routine_name)
+    
+  END SUBROUTINE read_dHb_3D_file
+  
+  SUBROUTINE create_reference_surface_load(grid, ice)
+  ! Caroline van Calcar 08/2022
+  
+    IMPLICIT NONE
+    
+    ! in/output variables:
+    TYPE(type_ice_model),             INTENT(INOUT)     :: ice
+    ! TYPE(type_reference_geometry),    INTENT(IN)        :: refgeo_PD
+    ! TYPE(type_reference_geometry),    INTENT(IN)        :: refgeo_GIAeq
+
+    TYPE(type_grid),                  INTENT(IN)        :: grid
+
+    
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                       :: routine_name = 'create_reference_surface_load'
+    INTEGER                                             :: i,j
+
+    CALL init_routine( routine_name)
+
+    ! IF (par%master) THEN
+      ! ice%Initial_ice_load = 0._dp
+      ! ice%ocean_depth_ref = 0._dp
+      ! ice%mask_ref = 1._dp
+      ! WHERE (ice_density / seawater_density * refgeo_PD%Hi .le. -refgeo_PD%Hb)
+        ! ice%mask_ref = 0._dp
+      ! END WHERE
+      ! ice%Initial_ice_load = refgeo_PD%Hi * ice%mask_ref
+      ! ice%ocean_depth_ref = -refgeo_PD%Hb
+      ! WHERE (ice%ocean_depth_ref<0._dp)
+        ! ice%ocean_depth_ref = 0._dp
+      ! END WHERE
+      ! ice%reference_surface_load = 0._dp
+      ! WHERE (ice%Initial_ice_load > 0._dp)
+        ! ice%reference_surface_load = ice%Initial_ice_load - seawater_density/ice_density * ice%ocean_depth_ref;
+      ! END WHERE
+    ! END IF
+    ! CALL SYNC  
+
+    ! DO i = grid%i1, grid%i2
+    ! DO j = 1, grid%ny
+      ! IF (is_floating( refgeo_PD%Hi( j,i), refgeo_PD%Hb( j,i), 0._dp)) THEN
+        ! ice%reference_surface_load( j,i) = -refgeo_PD%Hb( j,i) * seawater_density/ice_density
+      ! ELSEIF (refgeo_PD%Hi( j,i) > 0._dp) THEN
+        ! ice%reference_surface_load( j,i) = refgeo_PD%Hi( j,i)
+      ! END IF
+    ! END DO
+    ! END DO
+    
+    ! DO i = grid%i1, grid%i2
+    ! DO j = 1, grid%ny
+      ! IF (is_floating( refgeo_PD%Hi( j,i), refgeo_PD%Hb( j,i), 0._dp)) THEN
+        ! ice%reference_surface_load( j,i) = -refgeo_PD%Hb( j,i) * seawater_density/ice_density
+      ! ELSEIF (refgeo_PD%Hi( j,i) > 0._dp) THEN
+        ! ice%reference_surface_load( j,i) = refgeo_PD%Hi( j,i)
+      ! END IF
+    ! END DO
+    ! END DO
+    
+    IF (par%master) THEN
+      open (91, file = '/home/caroline/HetGroteKoppelScript_IMAUICE/IMAU-ICE/Datasets/3DGIA/reference_surface_load.dat', status = 'old')
+        do i = 1,grid%nx
+          read(91,*) (ice%reference_surface_load(j,i),j=1,grid%ny)
+        enddo
+      close(91)
+    END IF
+    CALL SYNC
+    
+    IF (par%master) THEN
+      open (91, file = '/home/caroline/HetGroteKoppelScript_IMAUICE/IMAU-ICE/Datasets/3DGIA/mask_ref.dat', status = 'old')
+        do i = 1,grid%nx
+          read(91,*) (ice%mask_ref(j,i),j=1,grid%ny)
+        enddo
+      close(91)
+    END IF
+    CALL SYNC  
+    
+    CALL finalise_routine( routine_name)
+   
+  END SUBROUTINE  create_reference_surface_load
 
   ! Initialise the entire model region - read initial and PD data, initialise the ice dynamics, climate and SMB sub models
   SUBROUTINE initialise_model( region, name, ocean_matrix_global)
@@ -500,7 +642,7 @@ CONTAINS
       CALL allocate_shared_dp_2D(        region%grid%ny  , region%grid%nx  , region%ice%mask_ref              , region%ice%wmask_ref)
       CALL allocate_shared_dp_2D(        region%grid%ny  , region%grid%nx  , region%ice%ocean_depth_ref       , region%ice%wocean_depth_ref)      
       CALL read_dHb_3D_file(region%grid, region%ice)
-      CALL create_reference_surface_load(region%ice, region%refgeo_init)
+      CALL create_reference_surface_load(region%grid, region%ice)
     ELSE
       CALL crash('unknown choice_GIA_model "' // TRIM(C%choice_GIA_model) // '"!')
     END IF
@@ -546,71 +688,7 @@ CONTAINS
 
   END SUBROUTINE initialise_model
 
-  SUBROUTINE read_dHb_3D_file( grid, ice)
-  ! Caroline van Calcar 08/2022
-  
-    IMPLICIT NONE
-    
-    ! in/output variables:
-    TYPE(type_grid),                  INTENT(IN)        :: grid
-    TYPE(type_ice_model),             INTENT(INOUT)     :: ice
-    
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                       :: routine_name = 'read_dHb_3D_file'
-    INTEGER                                             :: i,j
-    
-    CALL init_routine( routine_name)
-    
-    IF (par%master) THEN
-      open (91, file = '/home/caroline/HetGroteKoppelScript_IMAUICE/IMAU-ICE/Datasets/3DGIA/dHb_3D.dat', status = 'old')
-        do i = 1,grid%NX
-          read(91,*) (ice%dHb_3D(j,i),j=1,grid%NY)
-        enddo
-      close(91)
-    END IF
-    CALL SYNC
-    
-    CALL finalise_routine( routine_name)
-    
-  END SUBROUTINE
-  
-  SUBROUTINE create_reference_surface_load(ice, refgeo_init)
-  ! Caroline van Calcar 08/2022
-  
-    IMPLICIT NONE
-    
-    ! in/output variables:
-    TYPE(type_ice_model),             INTENT(INOUT)     :: ice
-    TYPE(type_reference_geometry),    INTENT(IN)        :: refgeo_init
 
-    
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                       :: routine_name = 'create_reference_surface_load'
-    
-    CALL init_routine( routine_name)
-
-    IF (par%master) THEN
-      ice%Initial_ice_load = 0._dp
-      ice%ocean_depth_ref = 0._dp
-      ice%mask_ref = 1._dp
-      WHERE (ice_density / seawater_density * refgeo_init%Hi .le. -refgeo_init%Hb)
-        ice%mask_ref = 0._dp
-      END WHERE
-      ice%Initial_ice_load = refgeo_init%Hi * ice%mask_ref
-      ice%ocean_depth_ref = -refgeo_init%Hb
-      WHERE (ice%ocean_depth_ref<0._dp)
-        ice%ocean_depth_ref = 0._dp
-      END WHERE
-      ice%reference_surface_load = 0._dp
-      WHERE (ice%Initial_ice_load > 0._dp)
-        ice%reference_surface_load = ice%Initial_ice_load - seawater_density/ice_density * ice%ocean_depth_ref;
-      END WHERE
-      
-    END IF
-    CALL SYNC  
-    CALL finalise_routine( routine_name)
-   
-  END SUBROUTINE  
 
   SUBROUTINE allocate_region_timers_and_scalars( region)
     ! Allocate shared memory for this region's timers (used for the asynchronous coupling between the

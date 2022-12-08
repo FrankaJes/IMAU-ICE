@@ -723,6 +723,7 @@ MODULE configuration_module
   INTEGER             :: sealevel_record_length_config               = 1
 
   CHARACTER(LEN=256)  :: choice_GIA_model_config                     = 'ELRA'                           ! Can be "none", "ELRA", or "SELEN"
+  CHARACTER(LEN=256)  :: deformation_foldername_config               = ''                              ! Folder containing the single timeframe NetCDF files of the ocean temperature anomaly
   REAL(dp)            :: dx_GIA_config                               = 100000._dp                       ! Horizontal resolution of the square grid used for the GIA model
   REAL(dp)            :: ELRA_lithosphere_flex_rigidity_config       = 1.0E+25_dp                       ! Lithospheric flexural rigidity [kg m^2 s^-2]
   REAL(dp)            :: ELRA_bedrock_relaxation_time_config         = 3000.0_dp                        ! Relaxation time for bedrock adjustment [yr]
@@ -1463,6 +1464,7 @@ MODULE configuration_module
     INTEGER                             :: sealevel_record_length
 
     CHARACTER(LEN=256)                  :: choice_GIA_model
+    CHARACTER(LEN=256)                  :: deformation_foldername
     REAL(dp)                            :: dx_GIA
     REAL(dp)                            :: ELRA_lithosphere_flex_rigidity
     REAL(dp)                            :: ELRA_bedrock_relaxation_time
@@ -2242,6 +2244,7 @@ CONTAINS
                      filename_sealevel_record_config,                 &
                      sealevel_record_length_config,                   &
                      choice_GIA_model_config,                         &
+                     deformation_foldername_config,                   &
                      dx_GIA_config,                                   &
                      ELRA_lithosphere_flex_rigidity_config,           &
                      ELRA_bedrock_relaxation_time_config,             &
@@ -3135,6 +3138,7 @@ CONTAINS
     C%sealevel_record_length                   = sealevel_record_length_config
 
     C%choice_GIA_model                         = choice_GIA_model_config
+    C%deformation_foldername                   = deformation_foldername_config
     C%dx_GIA                                   = dx_GIA_config
     C%ELRA_lithosphere_flex_rigidity           = ELRA_lithosphere_flex_rigidity_config
     C%ELRA_bedrock_relaxation_time             = ELRA_bedrock_relaxation_time_config

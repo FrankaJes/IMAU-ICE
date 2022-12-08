@@ -1586,11 +1586,11 @@ CONTAINS
     ! Some quantities that can be provided as input for an offline 3D GIA model !CvC  
     ELSEIF (C%choice_GIA_model == '3DGIA') THEN 
       IF (field_name == 'reference_surface_load') THEN
-        CALL create_int_var(    region%help_fields%ncid, 'reference_surface_load',   [x, y,    t], id_Var, long_name='reference_surface_load', units='kg m-2')
+        CALL create_double_var(    region%help_fields%ncid, 'reference_surface_load',   [x, y,    t], id_Var, long_name='reference_surface_load', units='kg m-2')
       ELSEIF (field_name == 'total_surface_load') THEN
-        CALL create_int_var(    region%help_fields%ncid, 'total_surface_load',       [x, y,    t], id_Var, long_name='Total surface load', units='kg m-2')
+        CALL create_double_var(    region%help_fields%ncid, 'total_surface_load',       [x, y,    t], id_Var, long_name='Total surface load', units='kg m-2')
       ELSEIF (field_name == 'relative_surface_load') THEN
-        CALL create_int_var(    region%help_fields%ncid, 'relative_surface_load',    [x, y,    t], id_Var, long_name='Relative surface load', units='kg m-2')   
+        CALL create_double_var(    region%help_fields%ncid, 'relative_surface_load',    [x, y,    t], id_Var, long_name='Relative surface load', units='kg m-2')   
       END IF   
     ELSE
       CALL crash('unknown field name "' // TRIM(field_name) // '"!')
