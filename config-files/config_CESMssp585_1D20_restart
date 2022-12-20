@@ -3,8 +3,8 @@
   ! Time steps and range
   ! ====================
 
-  start_time_of_run_config                    = 2013.0                           ! Start time (in years) of the simulations
-  end_time_of_run_config                      = 2100.0                           ! End   time (in years) of the simulations
+  start_time_of_run_config                    = 2500.0                           ! Start time (in years) of the simulations
+  end_time_of_run_config                      = 2600.0                           ! End   time (in years) of the simulations
   dt_coupling_config                          = 1.0                         ! Interval of coupling (in years) between the four ice-sheets
   dt_max_config                               = 1.0                              ! Maximum time step (in years) of the ice model
   dt_min_config                               = 0.01                             ! Smallest allowed time step [yr]
@@ -16,7 +16,7 @@
   dt_BMB_config                               = 2.0                              ! Time step (in years) for updating the BMB
   dt_bedrock_ELRA_config                      = 300.0                              ! Time step (in years) for updating the bedrock deformation rate with the ELRA model
   dt_SELEN_config                             = 100.0                           ! Time step (in years) for calling SELEN
-  dt_output_config                            = 30.0                              ! Time step (in years) for writing output
+  dt_output_config                            = 150.0                              ! Time step (in years) for writing output
 
   ! Which ice sheets do we simulate?
   ! ================================
@@ -129,7 +129,7 @@
   time_to_restart_from_NAM_config             = 0.0                              ! Can be different from C%start_time_of_run, though this will issue a warning
   time_to_restart_from_EAS_config             = 0.0
   time_to_restart_from_GRL_config             = 0.0
-  time_to_restart_from_ANT_config             = 2013.0
+  time_to_restart_from_ANT_config             = 2500.0
   choice_refgeo_init_idealised_config         = 'flatearth'                      ! Choice of schematic initial geometry; see "generate_idealised_geometry" in reference_fields_module for options
   filename_refgeo_init_NAM_config             = '/home/caroline/HetGroteKoppelScript_IMAUICE/IMAU-ICE/Datasets/ETOPO1/NorthAmerica_ETOPO1_5km.nc'
   filename_refgeo_init_EAS_config             = '/home/caroline/HetGroteKoppelScript_IMAUICE/IMAU-ICE/Datasets/ETOPO1/Eurasia_ETOPO1_5km.nc'
