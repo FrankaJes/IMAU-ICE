@@ -30,7 +30,7 @@
   ! =====================
 
   ! SSA_icestream (see Schoof 2006, and also Bueler and Brown 2009)
-  SSA_icestream_A_config                      = 1.0E-17                          ! Glen's flow law factor (Pa yr^-1)
+  SSA_icestream_A_config                      = 1.0E-17                          ! Glen`s flow law factor (Pa yr^-1)
   SSA_icestream_L_config                      = 100000.0                         ! Ice-stream half-width (m)
   SSA_icestream_m_config                      = 0.5                              ! Determines the "smoothness" of the transition between the low-friction ice stream centre and the high-friction margin areas; low value (~0.5) = gradual, high value ( ~10) = sudden
   SSA_icestream_tantheta_config               = 0.0003                           ! Slope
@@ -38,7 +38,7 @@
 
   ! ISMIP-HOM (see Pattyn et al. 2008)
   ISMIP_HOM_L_config                          = 160000.0                         ! Domain size of the ISMIP-HOM benchmarks
-  ISMIP_HOM_E_Arolla_filename_config          = 'arolla100.dat'                  ! Path to the Haut Glacier d'Arolla input file
+  ISMIP_HOM_E_Arolla_filename_config          = 'arolla100.dat'                  ! Path to the Haut Glacier d`Arolla input file
 
   ! MISOMIP1 (see Asay-Davis et al., 2016)
   MISOMIP1_scenario_config                    = ''                               ! Choose between the four MISOMIP+ scenarios from Asay-Davis et al. (2016): IceOcean1ra, IceOcean1rr, IceOcean2ra, IceOcean2rr
@@ -47,8 +47,8 @@
   ! This works fine locally, on LISA its better to use a fixed folder name.
   ! =======================================================================
 
-  create_procedural_output_dir_config         = .TRUE.                           ! Automatically create an output directory with a procedural name (e.g. results_20210720_001/)
-  fixed_output_dir_config                     = 'results_IMAU_ICE'               ! If not, create a directory with this name instead (stops the program if this directory already exists)
+  create_procedural_output_dir_config         = .FALSE.                           ! Automatically create an output directory with a procedural name (e.g. results_20210720_001/)
+  fixed_output_dir_config                     = 'results_MISMIPplus_5km_ice0_PICO'               ! If not, create a directory with this name instead (stops the program if this directory already exists)
   fixed_output_dir_suffix_config              = ''                               ! Suffix to put after the fixed output directory name, useful when doing ensemble runs with the template+variation set-up
   do_write_regional_scalar_output_config      = .TRUE.
   do_write_global_scalar_output_config        = .TRUE.
@@ -199,7 +199,7 @@
   ! =======================
 
   choice_ice_dynamics_config                  = 'DIVA'                           ! Choice of ice-dynamica approximation: "none" (= fixed geometry), "SIA", "SSA", "SIA/SSA", "DIVA"
-  n_flow_config                               = 3.0                              ! Exponent in Glen's flow law
+  n_flow_config                               = 3.0                              ! Exponent in Glen`s flow law
   m_enh_sheet_config                          = 1.0                              ! Ice flow enhancement factor for grounded ice
   m_enh_shelf_config                          = 1.0                              ! Ice flow enhancement factor for floating ice
   choice_ice_margin_config                    = 'infinite_slab'                  ! Choice of ice margin boundary conditions: "BC", "infinite_slab"
@@ -502,10 +502,10 @@
   ! Basal mass balance
   ! ==================
 
-  choice_BMB_shelf_model_config               = 'uniform'                        ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
+  choice_BMB_shelf_model_config               = 'Lazeroms2018_plume'                 ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
   choice_idealised_BMB_shelf_config           = ''
   choice_BMB_sheet_model_config               = 'uniform'                        ! Choice of sheet BMB: "uniform"
-  BMB_shelf_uniform_config                    = 0.0                              ! Uniform shelf BMB, applied when choice_BMB_shelf_model = "uniform" [mie/yr]
+  BMB_shelf_uniform_config                    = 10.0                              ! Uniform shelf BMB, applied when choice_BMB_shelf_model = "uniform" [mie/yr]
   BMB_sheet_uniform_config                    = 0.0                              ! Uniform sheet BMB, applied when choice_BMB_sheet_model = "uniform" [mie/yr]
   choice_BMB_subgrid_config                   = 'FCMP'                           ! Choice of sub-grid BMB scheme: "FCMP", "PMP", "NMP" (following Leguy et al., 2021)
   do_asynchronous_BMB_config                  = .FALSE.                          ! Whether or not to run the BMB asynchronously from the ice dynamics (if so, run it at dt_BMB; if not, run it in every ice dynamics time step)
@@ -615,7 +615,7 @@
   SELEN_n_recursion_iterations_config          = 1                               ! Number of recursion iterations
   SELEN_use_rotational_feedback_config         = .FALSE.                         ! If TRUE, rotational feedback is included
   SELEN_n_harmonics_config                     = 128                             ! Maximum number of harmonic degrees
-  SELEN_display_progress_config                = .FALSE.                         ! Whether or not to display the progress of the big loops to the screen (doesn't work on Cartesius!)
+  SELEN_display_progress_config                = .FALSE.                         ! Whether or not to display the progress of the big loops to the screen (doesn`t work on Cartesius!)
 
   SELEN_dir_config                             = 'SELEN_files'                   ! Directory where SELEN initial files and spherical harmonics are stored
   SELEN_global_topo_filename_config            = 'SELEN_global_topography.nc'    ! Filename for the SELEN global topography file (located in SELEN_dir)

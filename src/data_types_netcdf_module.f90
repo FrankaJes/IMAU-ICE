@@ -100,6 +100,46 @@ MODULE data_types_netcdf_module
     CHARACTER(LEN=256) :: name_var_CO2_inverse_history      = 'CO2_inverse_history    '
 
   END TYPE type_netcdf_restart
+  
+  TYPE type_netcdf_BMB_data
+
+    CHARACTER(LEN=256) :: filename
+
+    ! ID for NetCDF file:
+    INTEGER :: ncid
+
+    ! Index of time frame to be written to
+    INTEGER :: ti
+
+  ! ID's for dimensions:
+  ! ===================
+
+    ! Dimensions
+    INTEGER :: id_dim_x
+    INTEGER :: id_dim_y
+    INTEGER :: id_dim_month
+
+    CHARACTER(LEN=256) :: name_dim_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_dim_y                     = 'y                    '
+    CHARACTER(LEN=256) :: name_dim_month                 = 'month                '
+
+    INTEGER :: id_var_x
+    INTEGER :: id_var_y
+    INTEGER :: id_var_month
+
+    CHARACTER(LEN=256) :: name_var_x                     = 'x                    '
+    CHARACTER(LEN=256) :: name_var_y                     = 'y                    '
+    CHARACTER(LEN=256) :: name_var_month                 = 'month                '
+
+  ! File data - melt ice shelf
+  ! =================================================================
+
+    ! Ice dynamics
+    INTEGER :: id_var_melt
+
+    CHARACTER(LEN=256) :: name_var_melt                  = 'melt                 '
+
+  END TYPE type_netcdf_BMB_data
 
   TYPE type_netcdf_help_fields
     ! Integers describing open ports to different variables in an opened NetCDF file,

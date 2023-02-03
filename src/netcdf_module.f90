@@ -18,7 +18,7 @@ MODULE netcdf_module
   USE data_types_module,               ONLY: type_grid, type_grid_lonlat, type_ice_model, type_model_region, type_reference_geometry, &
                                              type_restart_data, type_forcing_data, type_climate_snapshot, type_ocean_snapshot_global, &
                                              type_debug_fields, type_SELEN_global, type_global_scalar_data, type_highres_ocean_data, &
-                                             type_BIV_target_velocity, type_BIV_bed_roughness, type_sparse_matrix_CSR
+                                             type_BIV_target_velocity, type_BIV_bed_roughness, type_sparse_matrix_CSR, type_BMB_data
   USE data_types_netcdf_module
 
   IMPLICIT NONE
@@ -2803,6 +2803,52 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE inquire_restart_file_isotopes
+  SUBROUTINE inquire_BMB_data_file(     BMB_data)
+    ! Check if the right dimensions and variables are present in the file.
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_BMB_data),        INTENT(INOUT) :: BMB_data
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'inquire_BMB_data_file'
+    INTEGER                                       :: x, y
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( BMB_data%netcdf%filename, BMB_data%netcdf%ncid)
+
+    ! Inquire dimensions id's. Check that all required dimensions exist, return their lengths.
+    CALL inquire_dim( BMB_data%netcdf%ncid, BMB_data%netcdf%name_dim_x,     BMB_data%nx, BMB_data%netcdf%id_dim_x    )
+    CALL inquire_dim( BMB_data%netcdf%ncid, BMB_data%netcdf%name_dim_y,     BMB_data%ny, BMB_data%netcdf%id_dim_y    )
+    
+    ! Abbreviations for shorter code
+    x = BMB_data%netcdf%id_dim_x
+    y = BMB_data%netcdf%id_dim_y
+
+    ! Inquire variable ID's; make sure that each variable has the correct dimensions.
+    ! Dimensions
+    CALL inquire_double_var( BMB_data%netcdf%ncid, BMB_data%netcdf%name_var_x,                (/ x             /), BMB_data%netcdf%id_var_x   )
+    CALL inquire_double_var( BMB_data%netcdf%ncid, BMB_data%netcdf%name_var_y,                (/    y          /), BMB_data%netcdf%id_var_y   )
+
+    ! Data
+    CALL inquire_double_var( BMB_data%netcdf%ncid, BMB_data%netcdf%name_var_melt,              (/ x, y         /), BMB_data%netcdf%id_var_melt)
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( BMB_data%netcdf%ncid)
+    
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE inquire_BMB_data_file
 
   SUBROUTINE read_restart_file_geometry(       restart, time_to_restart_from)
     ! Read the restart netcdf file
@@ -3085,6 +3131,46 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_restart_file_isotopes
+  
+  SUBROUTINE read_BMB_data_file(      BMB_data)
+    ! Read the BMB netcdf file
+
+    IMPLICIT NONE
+
+    ! Input variables:
+    TYPE(type_BMB_data),        INTENT(INOUT) :: BMB_data
+
+    ! Local variables:
+    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_BMB_data_file'
+    !INTEGER                                       :: ti, ti_min
+    !REAL(dp)                                      :: dt, dt_min
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    IF (.NOT. par%master) THEN
+      CALL finalise_routine( routine_name)
+      RETURN
+    END IF
+
+    ! Open the netcdf file
+    CALL open_netcdf_file( BMB_data%netcdf%filename, BMB_data%netcdf%ncid)
+
+    ! Read x,y
+    CALL handle_error(nf90_get_var( BMB_data%netcdf%ncid, BMB_data%netcdf%id_var_x, BMB_data%x, start=(/1/) ))
+    CALL handle_error(nf90_get_var( BMB_data%netcdf%ncid, BMB_data%netcdf%id_var_y, BMB_data%y, start=(/1/) ))
+
+    ! Read the data
+    CALL handle_error(nf90_get_var( BMB_data%netcdf%ncid, BMB_data%netcdf%id_var_melt, BMB_data%melt, start = (/ 1, 1 /), count = (/ BMB_data%nx, BMB_data%ny/) ))
+
+    ! Close the netcdf file
+    CALL close_netcdf_file( BMB_data%netcdf%ncid)
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE read_BMB_data_file
+
 
   SUBROUTINE read_inverse_routine_history_dT_glob(         forcing, filename)
     ! Read the inverse routine history from the specified NetCDF file

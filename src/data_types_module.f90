@@ -803,6 +803,12 @@ MODULE data_types_module
     INTEGER :: wBMB_shelf_exposed_PD, wBMB_shelf_exposed_cold, wBMB_shelf_exposed_warm
     INTEGER :: wsubshelf_melt_factor, wdeep_ocean_threshold_depth
 
+    ! The LADDIE model
+    ! ================
+
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: melt                     ! Distance to grounding line [m]
+    INTEGER                                 :: wmelt                     ! Distance to ice front      [m]
+
     ! Additional data fields
     REAL(dp), DIMENSION(:,:  ), POINTER     :: sub_angle                     ! "subtended angle"      for the sub-shelf melt parameterisation
     REAL(dp), DIMENSION(:,:  ), POINTER     :: dist_open                     ! distance to open ocean for the sub-shelf melt parameterisation
@@ -867,6 +873,24 @@ MODULE data_types_module
     INTEGER :: wIsoIce
 
   END TYPE type_restart_data
+
+  TYPE type_BMB_data
+    ! BMB data from NetCDF file
+
+    ! NetCDF file
+    TYPE(type_netcdf_BMB_data)              :: netcdf
+
+    ! Grid
+    INTEGER,                    POINTER     :: nx, ny
+    REAL(dp), DIMENSION(:    ), POINTER     :: x, y
+    INTEGER :: wnx, wny, wx, wy
+
+    ! Melt field
+    REAL(dp), DIMENSION(:,:  ), POINTER     :: melt
+
+    INTEGER :: wmelt
+
+  END TYPE type_BMB_data
 
   TYPE type_BIV_bed_roughness
     ! Bed roughness field produced by a basal inversion procedure

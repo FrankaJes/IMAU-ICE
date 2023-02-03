@@ -11,11 +11,13 @@ MODULE BMB_module
                                              allocate_shared_int_2D, allocate_shared_dp_2D, &
                                              allocate_shared_int_3D, allocate_shared_dp_3D, &
                                              deallocate_shared
-  USE data_types_module,               ONLY: type_grid, type_ice_model, type_ocean_snapshot_regional, type_BMB_model, type_reference_geometry
-  USE netcdf_module,                   ONLY: debug, write_to_debug_file
+  USE data_types_module,               ONLY: type_grid, type_ice_model, type_ocean_snapshot_regional, &
+                                             type_BMB_model, type_reference_geometry, type_BMB_data
+  USE data_types_netcdf_module,        ONLY: type_netcdf_BMB_data
+  USE netcdf_module,                   ONLY: debug, write_to_debug_file, read_BMB_data_file, inquire_BMB_data_file
   USE utilities_module,                ONLY: check_for_NaN_dp_1D,  check_for_NaN_dp_2D,  check_for_NaN_dp_3D, &
                                              check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
-                                             interpolate_ocean_depth, interp_bilin_2D
+                                             interpolate_ocean_depth, interp_bilin_2D, transpose_dp_2D
   USE forcing_module,                  ONLY: forcing, get_insolation_at_time_month_and_lat
   IMPLICIT NONE
 
@@ -66,6 +68,8 @@ CONTAINS
       CALL run_BMB_model_PICO(                 grid, ice, ocean, BMB)
     ELSEIF (C%choice_BMB_shelf_model == 'PICOP') THEN
       CALL run_BMB_model_PICOP(                grid, ice, ocean, BMB)
+    ELSEIF (C%choice_BMB_shelf_model == 'LADDIE') THEN
+      CALL run_BMB_model_LADDIE(               grid, ice, ocean, BMB)
     ELSEIF (C%choice_BMB_shelf_model == 'inverse_shelf_geometry') THEN
       CALL inverse_BMB_shelf_geometry(         grid, ice,        BMB, refgeo_PD)
     ELSE
@@ -190,6 +194,8 @@ CONTAINS
       CALL initialise_BMB_model_PICO(  grid, ice, BMB)
     ELSEIF (C%choice_BMB_shelf_model == 'PICOP') THEN
       CALL initialise_BMB_model_PICOP( grid, ice, BMB)
+    ELSEIF (C%choice_BMB_shelf_model == 'LADDIE') THEN
+      ! Do nothing
     ELSEIF (C%choice_BMB_shelf_model == 'inverse_shelf_geometry') THEN
       BMB%BMB_shelf( :,grid%i1:grid%i2) = C%BMB_shelf_uniform
       CALL sync
@@ -2912,6 +2918,67 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE initialise_BMB_model_PICOP
+
+! == The LADDIE model + reading netcdf for basal melt
+! ===================================================
+  SUBROUTINE run_BMB_model_LADDIE(         grid, ice, ocean, BMB)
+
+    IMPLICIT NONE
+
+    ! In/output variables
+    TYPE(type_grid),                     INTENT(IN)    :: grid
+    TYPE(type_ice_model),                INTENT(IN)    :: ice
+    TYPE(type_ocean_snapshot_regional),  INTENT(IN)    :: ocean
+    TYPE(type_BMB_model),                INTENT(INOUT) :: BMB
+
+    ! Local variables:
+    TYPE(type_BMB_data)                                :: meltdata
+    CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_BMB_model_LADDIE'
+    INTEGER                                            :: i,j
+
+    ! Add routine to path
+    CALL init_routine( routine_name)
+
+    ! Allocate memory 
+    CALL allocate_shared_int_0D( meltdata%nx, meltdata%wnx)
+    CALL allocate_shared_int_0D( meltdata%ny, meltdata%wny)
+    
+    ! Check if master branch
+    IF (par%master) THEN
+      meltdata%netcdf%filename = C%filename_BMB_LADDIE !'/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_v4.nc'
+      CALL inquire_BMB_data_file(meltdata)
+    END IF
+    CALL sync
+
+    ! Allocate memory for data x, y, melt
+    CALL allocate_shared_dp_1D( meltdata%nx, meltdata%x,    meltdata%wx   )
+    CALL allocate_shared_dp_1D( meltdata%ny, meltdata%y,    meltdata%wy   )    
+    CALL allocate_shared_dp_2D( meltdata%ny, meltdata%nx,   meltdata%melt,        meltdata%wmelt     )
+
+    ! Check if master branch
+    IF (par%master) CALL read_BMB_data_file(meltdata)
+    CALL sync
+
+    ! Check for NaNs
+    CALL check_for_NaN_dp_2D( meltdata%melt, 'meltdata%melt')
+
+    ! Copy melt to shelf melt
+    BMB%BMB_shelf = meltdata%melt
+
+    ! Deallocate raw data
+    CALL deallocate_shared( meltdata%wnx              )
+    CALL deallocate_shared( meltdata%wny              )
+    CALL deallocate_shared( meltdata%wx               )
+    CALL deallocate_shared( meltdata%wy               )
+    CALL deallocate_shared( meltdata%wmelt            )
+    CALL deallocate_shared( BMB%wmelt                 )
+
+    ! Finalise routine path
+    CALL finalise_routine( routine_name)
+
+  END SUBROUTINE run_BMB_model_LADDIE
+
+
 
 ! == Some generally useful tools
 ! ==============================

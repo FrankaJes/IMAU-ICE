@@ -252,6 +252,9 @@ MODULE configuration_module
   REAL(dp)            :: constant_geothermal_heat_flux_config        = 1.72E06_dp                       ! Geothermal Heat flux [J m^-2 yr^-1] Sclater et al. (1980)
   CHARACTER(LEN=256)  :: filename_geothermal_heat_flux_config        = '/Users/berends/Documents/Datasets/GHF/geothermal_heatflux_ShapiroRitzwoller2004_global_1x1_deg.nc'
 
+  ! BMB forcing (NetCDF)
+  CHARACTER(LEN=256)  :: filename_BMB_laddie_config                  = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_low.nc'
+
   ! Parameters for calculating modelled benthic d18O
   LOGICAL             :: do_calculate_benthic_d18O_config            = .TRUE.                           ! Whether or not to calculate modelled benthic d18O (set to .FALSE. for e.g. idealised-geometry experiments, future projections)
   REAL(dp)            :: dT_deepwater_averaging_window_config        = 3000                             ! Time window (in yr) over which global mean temperature anomaly is averaged to find the deep-water temperature anomaly
@@ -990,6 +993,9 @@ MODULE configuration_module
     ! d18O record (ASCII text file, so the number of rows needs to be specified)
     CHARACTER(LEN=256)                  :: filename_d18O_record
     INTEGER                             :: d18O_record_length
+    
+    ! Basal melt LADDIE                
+    CHARACTER(LEN=256)                  :: filename_BMB_LADDIE 
 
     ! Geothermal heat flux
     CHARACTER(LEN=256)                  :: choice_geothermal_heat_flux
@@ -1877,6 +1883,7 @@ CONTAINS
                      CO2_record_length_config,                        &
                      filename_d18O_record_config,                     &
                      d18O_record_length_config,                       &
+                     filename_BMB_laddie_config,                      &
                      choice_geothermal_heat_flux_config,              &
                      constant_geothermal_heat_flux_config,            &
                      filename_geothermal_heat_flux_config,            &
@@ -2633,6 +2640,7 @@ CONTAINS
     C%filename_d18O_record                     = filename_d18O_record_config
     C%d18O_record_length                       = d18O_record_length_config
 
+    C%filename_BMB_laddie                      = filename_BMB_laddie_config
     ! Geothermal heat flux
     C%choice_geothermal_heat_flux              = choice_geothermal_heat_flux_config
     C%constant_geothermal_heat_flux            = constant_geothermal_heat_flux_config
