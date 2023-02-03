@@ -200,12 +200,12 @@
   ! Basal mass balance
   ! ==================
   
-  choice_BMB_shelf_model_config               = 'uniform'                 ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
-  BMB_shelf_uniform_config                    = 10.0                              ! Uniform shelf BMB, applied when choice_BMB_shelf_model = "uniform" [mie/yr]
+  choice_BMB_shelf_model_config               = 'uniform'                        ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
+  BMB_shelf_uniform_config                    = 10.0                             ! Uniform shelf BMB, applied when choice_BMB_shelf_model = "uniform" [mie/yr]
 
   BMB_Favier2019_lin_GammaT_config            = 3.3314E-05
   choice_BMB_subgrid_config                   = 'FCMP'                           ! Choice of sub-grid BMB scheme: "FCMP", "PMP", "NMP" (following Leguy et al., 2021)
-  do_asynchronous_BMB_config                  = .TRUE.                          ! Whether or not to run the BMB asynchronously from the ice dynamics (if so, run it at dt_BMB; if not, run it in every ice dynamics time step)
+  do_asynchronous_BMB_config                  = .TRUE.                           ! Whether or not to run the BMB asynchronously from the ice dynamics (if so, run it at dt_BMB; if not, run it in every ice dynamics time step)
   
   ! Englacial isotope tracing
   ! =========================

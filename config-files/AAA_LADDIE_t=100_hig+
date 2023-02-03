@@ -202,7 +202,7 @@
   
   choice_BMB_shelf_model_config               = 'LADDIE'                 ! Choice of shelf BMB: "uniform", "idealised", "ANICE_legacy", "Favier2019_lin", "Favier2019_quad", "Favier2019_Mplus", "Lazeroms2018_plume", "PICO", "PICOP"
   BMB_Favier2019_lin_GammaT_config            = 3.3314E-05
-  filename_BMB_LADDIE_config   		      = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_higher.nc'
+  filename_BMB_laddie_config   		      = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_higher.nc'
   choice_BMB_subgrid_config                   = 'FCMP'                           ! Choice of sub-grid BMB scheme: "FCMP", "PMP", "NMP" (following Leguy et al., 2021)
   do_asynchronous_BMB_config                  = .TRUE.                          ! Whether or not to run the BMB asynchronously from the ice dynamics (if so, run it at dt_BMB; if not, run it in every ice dynamics time step)
   

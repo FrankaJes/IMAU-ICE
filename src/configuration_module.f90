@@ -247,13 +247,13 @@ MODULE configuration_module
   CHARACTER(LEN=256)  :: filename_d18O_record_config                 = '/Users/berends/Documents/Datasets/d18O/Ahn2017_d18O.dat'
   INTEGER             :: d18O_record_length_config                   = 2051
 
+  ! Basal melt field from LADDIE (NetCDF)
+  CHARACTER(LEN=256)  :: filename_BMB_laddie_config                  = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_low.nc'
+
   ! Geothermal heat flux
   CHARACTER(LEN=256)  :: choice_geothermal_heat_flux_config          = 'spatial'                        ! Choice of geothermal heat flux; can be 'constant' or 'spatial'
   REAL(dp)            :: constant_geothermal_heat_flux_config        = 1.72E06_dp                       ! Geothermal Heat flux [J m^-2 yr^-1] Sclater et al. (1980)
   CHARACTER(LEN=256)  :: filename_geothermal_heat_flux_config        = '/Users/berends/Documents/Datasets/GHF/geothermal_heatflux_ShapiroRitzwoller2004_global_1x1_deg.nc'
-
-  ! Basal melt field from LADDIE (NetCDF)
-  CHARACTER(LEN=256)  :: filename_BMB_laddie_config                  = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_low.nc'
 
   ! Parameters for calculating modelled benthic d18O
   LOGICAL             :: do_calculate_benthic_d18O_config            = .TRUE.                           ! Whether or not to calculate modelled benthic d18O (set to .FALSE. for e.g. idealised-geometry experiments, future projections)
@@ -995,7 +995,7 @@ MODULE configuration_module
     INTEGER                             :: d18O_record_length
     
     ! Basal melt field from LADDIE                
-    CHARACTER(LEN=256)                  :: filename_BMB_LADDIE 
+    CHARACTER(LEN=256)                  :: filename_BMB_laddie 
 
     ! Geothermal heat flux
     CHARACTER(LEN=256)                  :: choice_geothermal_heat_flux
