@@ -102,6 +102,8 @@ MODULE data_types_netcdf_module
   END TYPE type_netcdf_restart
   
   TYPE type_netcdf_BMB_data
+    ! Integers describing open ports to different variables in an opened NetCDF file,
+    ! plus character strings describing the names of those variables.
 
     CHARACTER(LEN=256) :: filename
 
@@ -131,10 +133,9 @@ MODULE data_types_netcdf_module
     CHARACTER(LEN=256) :: name_var_y                     = 'y                    '
     CHARACTER(LEN=256) :: name_var_month                 = 'month                '
 
-  ! File data - melt ice shelf
-  ! =================================================================
+  ! Presribed field of melt from LADDIE:
+  ! ====================================
 
-    ! Ice dynamics
     INTEGER :: id_var_melt
 
     CHARACTER(LEN=256) :: name_var_melt                  = 'melt                 '

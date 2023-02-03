@@ -875,7 +875,7 @@ MODULE data_types_module
   END TYPE type_restart_data
 
   TYPE type_BMB_data
-    ! BMB data from NetCDF file
+    ! Basal melt field computed by LADDIE
 
     ! NetCDF file
     TYPE(type_netcdf_BMB_data)              :: netcdf
@@ -885,9 +885,10 @@ MODULE data_types_module
     REAL(dp), DIMENSION(:    ), POINTER     :: x, y
     INTEGER :: wnx, wny, wx, wy
 
+    ! Data
+    
     ! Melt field
     REAL(dp), DIMENSION(:,:  ), POINTER     :: melt
-
     INTEGER :: wmelt
 
   END TYPE type_BMB_data

@@ -180,7 +180,8 @@ CONTAINS
 
     ! Shelf
     IF     (C%choice_BMB_shelf_model == 'uniform' .OR. &
-            C%choice_BMB_shelf_model == 'idealised') THEN
+            C%choice_BMB_shelf_model == 'idealised' .OR. &
+            C%choice_BMB_shelf_model == 'LADDIE') THEN
       ! Nothing else needs to be done
     ELSEIF (C%choice_BMB_shelf_model == 'ANICE_legacy') THEN
       CALL initialise_BMB_model_ANICE_legacy( grid, BMB, region_name)
@@ -194,8 +195,6 @@ CONTAINS
       CALL initialise_BMB_model_PICO(  grid, ice, BMB)
     ELSEIF (C%choice_BMB_shelf_model == 'PICOP') THEN
       CALL initialise_BMB_model_PICOP( grid, ice, BMB)
-    ELSEIF (C%choice_BMB_shelf_model == 'LADDIE') THEN
-      ! Do nothing
     ELSEIF (C%choice_BMB_shelf_model == 'inverse_shelf_geometry') THEN
       BMB%BMB_shelf( :,grid%i1:grid%i2) = C%BMB_shelf_uniform
       CALL sync
@@ -2919,10 +2918,11 @@ CONTAINS
 
   END SUBROUTINE initialise_BMB_model_PICOP
 
-! == The LADDIE model + reading netcdf for basal melt
-! ===================================================
+! == The LADDIE model
+! ================================================================
   SUBROUTINE run_BMB_model_LADDIE(         grid, ice, ocean, BMB)
-
+    ! Read basal melt field from NetCDF computed by LADDIE
+    
     IMPLICIT NONE
 
     ! In/output variables
@@ -2932,46 +2932,44 @@ CONTAINS
     TYPE(type_BMB_model),                INTENT(INOUT) :: BMB
 
     ! Local variables:
-    TYPE(type_BMB_data)                                :: meltdata
+    TYPE(type_BMB_data)                                :: melt_field
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_BMB_model_LADDIE'
-    INTEGER                                            :: i,j
 
     ! Add routine to path
     CALL init_routine( routine_name)
 
     ! Allocate memory 
-    CALL allocate_shared_int_0D( meltdata%nx, meltdata%wnx)
-    CALL allocate_shared_int_0D( meltdata%ny, meltdata%wny)
+    CALL allocate_shared_int_0D( melt_field%nx, melt_field%wnx)
+    CALL allocate_shared_int_0D( melt_field%ny, melt_field%wny)
     
     ! Check if master branch
     IF (par%master) THEN
-      meltdata%netcdf%filename = C%filename_BMB_LADDIE !'/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_v4.nc'
-      CALL inquire_BMB_data_file(meltdata)
+      melt_field%netcdf%filename = C%filename_BMB_LADDIE 
+      CALL inquire_BMB_data_file(melt_field)
     END IF
     CALL sync
 
     ! Allocate memory for data x, y, melt
-    CALL allocate_shared_dp_1D( meltdata%nx, meltdata%x,    meltdata%wx   )
-    CALL allocate_shared_dp_1D( meltdata%ny, meltdata%y,    meltdata%wy   )    
-    CALL allocate_shared_dp_2D( meltdata%ny, meltdata%nx,   meltdata%melt,        meltdata%wmelt     )
+    CALL allocate_shared_dp_1D( melt_field%nx, melt_field%x,    melt_field%wx   )
+    CALL allocate_shared_dp_1D( melt_field%ny, melt_field%y,    melt_field%wy   )    
+    CALL allocate_shared_dp_2D( melt_field%ny, melt_field%nx,   melt_field%melt,        melt_field%wmelt     )
 
     ! Check if master branch
-    IF (par%master) CALL read_BMB_data_file(meltdata)
+    IF (par%master) CALL read_BMB_data_file(melt_field)
     CALL sync
 
     ! Check for NaNs
-    CALL check_for_NaN_dp_2D( meltdata%melt, 'meltdata%melt')
+    CALL check_for_NaN_dp_2D( melt_field%melt, 'melt_field%melt')
 
-    ! Copy melt to shelf melt
-    BMB%BMB_shelf = meltdata%melt
+    ! Define shelf melt
+    BMB%BMB_shelf = melt_field%melt
 
     ! Deallocate raw data
-    CALL deallocate_shared( meltdata%wnx              )
-    CALL deallocate_shared( meltdata%wny              )
-    CALL deallocate_shared( meltdata%wx               )
-    CALL deallocate_shared( meltdata%wy               )
-    CALL deallocate_shared( meltdata%wmelt            )
-    CALL deallocate_shared( BMB%wmelt                 )
+    CALL deallocate_shared( melt_field%wnx              )
+    CALL deallocate_shared( melt_field%wny              )
+    CALL deallocate_shared( melt_field%wx               )
+    CALL deallocate_shared( melt_field%wy               )
+    CALL deallocate_shared( melt_field%wmelt            )
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)

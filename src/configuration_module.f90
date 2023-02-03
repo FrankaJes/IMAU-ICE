@@ -252,7 +252,7 @@ MODULE configuration_module
   REAL(dp)            :: constant_geothermal_heat_flux_config        = 1.72E06_dp                       ! Geothermal Heat flux [J m^-2 yr^-1] Sclater et al. (1980)
   CHARACTER(LEN=256)  :: filename_geothermal_heat_flux_config        = '/Users/berends/Documents/Datasets/GHF/geothermal_heatflux_ShapiroRitzwoller2004_global_1x1_deg.nc'
 
-  ! BMB forcing (NetCDF)
+  ! Basal melt field from LADDIE (NetCDF)
   CHARACTER(LEN=256)  :: filename_BMB_laddie_config                  = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_low.nc'
 
   ! Parameters for calculating modelled benthic d18O
@@ -994,7 +994,7 @@ MODULE configuration_module
     CHARACTER(LEN=256)                  :: filename_d18O_record
     INTEGER                             :: d18O_record_length
     
-    ! Basal melt LADDIE                
+    ! Basal melt field from LADDIE                
     CHARACTER(LEN=256)                  :: filename_BMB_LADDIE 
 
     ! Geothermal heat flux
