@@ -2946,8 +2946,7 @@ CONTAINS
     
     ! Check if master branch
     IF (par%master) THEN
-      melt_field%netcdf%filename = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/v5_uniform_30.nc'
-      !melt_field%netcdf%filename = C%filename_BMB_laddie !'/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_mid.nc'
+      melt_field%netcdf%filename = C%filename_BMB_laddie !'/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/v5_uniform_30.nc'
       CALL inquire_BMB_data_file(melt_field)
     END IF
     CALL sync
@@ -2956,7 +2955,6 @@ CONTAINS
     CALL allocate_shared_dp_1D( melt_field%nx, melt_field%x,    melt_field%wx   )
     CALL allocate_shared_dp_1D( melt_field%ny, melt_field%y,    melt_field%wy   )    
     CALL allocate_shared_dp_2D( melt_field%ny, melt_field%nx,   melt_field%melt,        melt_field%wmelt     )
-    !CALL allocate_shared_dp_2D( melt_field%ny, melt_field%nx,   BMB%melt,        BMB%wmelt     )
 
     ! Check if master branch
     IF (par%master) CALL read_BMB_data_file(melt_field)
@@ -2985,7 +2983,6 @@ CONTAINS
     !CALL sync
 
     !IF (par%master) WRITE (6,*) 'BMB_SHELF_LADDIE = ', (BMB%BMB_shelf)
-
     !CALL map_square_to_square_cons_2nd_order_2D( melt_field%nx, melt_field%ny, melt_field%x, melt_field%y, grid%nx, grid%ny, grid%x, grid%y, melt_field%melt, BMB%BMB_shelf)
 
     ! Deallocate raw data
@@ -2994,7 +2991,6 @@ CONTAINS
     CALL deallocate_shared( melt_field%wx               )
     CALL deallocate_shared( melt_field%wy               )
     CALL deallocate_shared( melt_field%wmelt            )
-    !CALL deallocate_shared( BMB%wmelt            )
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)
