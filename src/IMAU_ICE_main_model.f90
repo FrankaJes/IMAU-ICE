@@ -436,11 +436,11 @@ CONTAINS
     ! === once during initialisation (so that the thermodynamics are solved correctly)
     ! ===
 
-    IF (C%choice_ice_dynamics == 'none') THEN
-      C%choice_ice_dynamics = 'DIVA'
-      CALL solve_DIVA( region%grid, region%ice)
-      C%choice_ice_dynamics = 'none'
-    END IF
+    !IF (C%choice_ice_dynamics == 'none') THEN
+    !  C%choice_ice_dynamics = 'DIVA'
+    !  CALL solve_DIVA( region%grid, region%ice)
+    !  C%choice_ice_dynamics = 'none'
+    !END IF
 
     IF (par%master) WRITE (0,*) ' Finished initialising model region ', region%name, '.'
 

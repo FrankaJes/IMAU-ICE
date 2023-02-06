@@ -17,7 +17,8 @@ MODULE BMB_module
   USE netcdf_module,                   ONLY: debug, write_to_debug_file, read_BMB_data_file, inquire_BMB_data_file
   USE utilities_module,                ONLY: check_for_NaN_dp_1D,  check_for_NaN_dp_2D,  check_for_NaN_dp_3D, &
                                              check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
-                                             interpolate_ocean_depth, interp_bilin_2D, transpose_dp_2D
+                                             interpolate_ocean_depth, interp_bilin_2D, transpose_dp_2D, &
+                                             map_square_to_square_cons_2nd_order_2D
   USE forcing_module,                  ONLY: forcing, get_insolation_at_time_month_and_lat
   IMPLICIT NONE
 
@@ -2934,6 +2935,7 @@ CONTAINS
     ! Local variables:
     TYPE(type_BMB_data)                                :: melt_field
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_BMB_model_LADDIE'
+    INTEGER                                            :: i,j
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -2944,7 +2946,8 @@ CONTAINS
     
     ! Check if master branch
     IF (par%master) THEN
-      melt_field%netcdf%filename = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_mid.nc' !C%filename_BMB_laddie
+      melt_field%netcdf%filename = '/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/v5_uniform_30.nc'
+      !melt_field%netcdf%filename = C%filename_BMB_laddie !'/Users/5941962/surfdrive/IMAU-ICE/LADDIE_input/MISOMIP1_BMB=LADDIE_yr100_mid.nc'
       CALL inquire_BMB_data_file(melt_field)
     END IF
     CALL sync
@@ -2962,8 +2965,28 @@ CONTAINS
     ! Check for NaNs
     CALL check_for_NaN_dp_2D( melt_field%melt, 'melt_field%melt')
 
-    ! Define shelf melt
-    BMB%BMB_shelf = melt_field%melt
+    ! If desired, the BMB can be tuned locally by changing the amplification factor
+    DO i = grid%i1, grid%i2
+    DO j = 1, grid%ny
+
+      ! Initialise
+      BMB%BMB_shelf( j,i) = 0._dp
+      
+      ! Define shelf melt
+      BMB%BMB_shelf( j,i) = -melt_field%melt( j,i)
+
+    END do
+    END do
+    CALL sync
+
+    !debug%dp_2d_01 = melt_field%melt
+    !debug%dp_2d_02 = BMB%BMB_shelf
+    !CALL write_to_debug_file
+    !CALL sync
+
+    !IF (par%master) WRITE (6,*) 'BMB_SHELF_LADDIE = ', (BMB%BMB_shelf)
+
+    !CALL map_square_to_square_cons_2nd_order_2D( melt_field%nx, melt_field%ny, melt_field%x, melt_field%y, grid%nx, grid%ny, grid%x, grid%y, melt_field%melt, BMB%BMB_shelf)
 
     ! Deallocate raw data
     CALL deallocate_shared( melt_field%wnx              )

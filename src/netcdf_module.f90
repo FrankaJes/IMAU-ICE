@@ -315,6 +315,8 @@ CONTAINS
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%ice%dHs_dx_a,       (/1, 1,    ti /))
     ELSEIF (field_name == 'dHs_dy') THEN
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%ice%dHs_dy_a,       (/1, 1,    ti /))
+    ELSEIF (field_name == 'f_grnd') THEN
+      CALL write_data_to_file_dp_2D( ncid, nx, ny,     id_var,               region%ice%f_grnd_a,       (/1, 1,    ti /))
 
     ! Thermal properties
     ELSEIF (field_name == 'Ti') THEN
@@ -1406,6 +1408,8 @@ CONTAINS
       CALL create_double_var( region%help_fields%ncid, 'dHs_dx',                   [x, y,    t], id_var, long_name='Surface slope in x-direction', units='m/m')
     ELSEIF (field_name == 'dHs_dy') THEN
       CALL create_double_var( region%help_fields%ncid, 'dHs_dy',                   [x, y,    t], id_var, long_name='Surface slope in y-direction', units='m/m')
+    ELSEIF (field_name == 'f_grnd') THEN
+      CALL create_double_var( region%help_fields%ncid, 'f_grnd',                   [x, y,    t], id_var, long_name='Grounded fraction')
 
     ! Thermal properties
     ELSEIF (field_name == 'Ti') THEN
