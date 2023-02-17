@@ -2954,7 +2954,7 @@ CONTAINS
     ! Allocate memory for data x, y, melt
     CALL allocate_shared_dp_1D( melt_field%nx, melt_field%x,    melt_field%wx   )
     CALL allocate_shared_dp_1D( melt_field%ny, melt_field%y,    melt_field%wy   )    
-    CALL allocate_shared_dp_2D( melt_field%ny, melt_field%nx,   melt_field%melt,        melt_field%wmelt     )
+    CALL allocate_shared_dp_2D( melt_field%nx, melt_field%ny,   melt_field%melt,        melt_field%wmelt     )
 
     ! Check if master branch
     IF (par%master) CALL read_BMB_data_file(melt_field)
@@ -2962,6 +2962,9 @@ CONTAINS
 
     ! Check for NaNs
     CALL check_for_NaN_dp_2D( melt_field%melt, 'melt_field%melt')
+
+    CALL transpose_dp_2D( melt_field%melt, melt_field%wmelt)
+    !çCALL map_square_to_square_cons_2nd_order_2D( melt_field%nx, melt_field%ny, melt_field%x, melt_field%y, grid%nx, grid%ny, grid%x, grid%y, -melt_field%melt, BMB%BMB_shelf)
 
     ! If desired, the BMB can be tuned locally by changing the amplification factor
     DO i = grid%i1, grid%i2
@@ -2971,16 +2974,16 @@ CONTAINS
       BMB%BMB_shelf( j,i) = 0._dp
       
       ! Define shelf melt
-      BMB%BMB_shelf( j,i) = -melt_field%melt( j,i)
+      BMB%BMB_shelf( j,i) = -melt_field%melt(j,i)
 
     END do
     END do
     CALL sync
 
-    !debug%dp_2d_01 = melt_field%melt
-    !debug%dp_2d_02 = BMB%BMB_shelf
-    !CALL write_to_debug_file
-    !CALL sync
+    debug%dp_2d_01 = melt_field%melt
+    debug%dp_2d_02 = BMB%BMB_shelf
+    CALL write_to_debug_file
+    CALL sync
 
     !IF (par%master) WRITE (6,*) 'BMB_SHELF_LADDIE = ', (BMB%BMB_shelf)
     !CALL map_square_to_square_cons_2nd_order_2D( melt_field%nx, melt_field%ny, melt_field%x, melt_field%y, grid%nx, grid%ny, grid%x, grid%y, melt_field%melt, BMB%BMB_shelf)
