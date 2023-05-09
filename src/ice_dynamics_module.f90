@@ -14,7 +14,7 @@ MODULE ice_dynamics_module
                                                  allocate_shared_int_2D, allocate_shared_dp_2D, &
                                                  allocate_shared_int_3D, allocate_shared_dp_3D, &
                                                  deallocate_shared, partition_list
-  USE data_types_module,                   ONLY: type_model_region, type_grid, type_ice_model, type_reference_geometry
+  USE data_types_module,                   ONLY: type_model_region, type_grid, type_ice_model, type_reference_geometry, type_restart_data
   USE netcdf_module,                       ONLY: debug, write_to_debug_file
   USE utilities_module,                    ONLY: check_for_NaN_dp_1D,  check_for_NaN_dp_2D,  check_for_NaN_dp_3D, &
                                                  check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
@@ -941,7 +941,7 @@ CONTAINS
   END SUBROUTINE determine_timesteps_and_actions
 
 ! == Administration: allocation and initialisation
-  SUBROUTINE initialise_ice_model( grid, ice, refgeo_init)
+  SUBROUTINE initialise_ice_model( grid, ice, refgeo_init, restart)
     ! Allocate shared memory for all the data fields of the ice dynamical module, and
     ! initialise some of them
 
@@ -951,6 +951,7 @@ CONTAINS
     TYPE(type_grid),                     INTENT(IN)    :: grid
     TYPE(type_ice_model),                INTENT(INOUT) :: ice
     TYPE(type_reference_geometry),       INTENT(IN)    :: refgeo_init
+    TYPE(type_restart_data),             INTENT(IN)    :: restart
 
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'initialise_ice_model'
@@ -1026,6 +1027,19 @@ CONTAINS
     IF (C%do_apply_prescribed_retreat_mask) THEN
       CALL initialise_retreat_mask_refice( grid, ice)
     END IF
+
+    ! Initialise velocity fields with the restart file
+    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+      ice%u_SSA_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_SSA_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
+      ice%v_SSA_cy( :,grid%i1:grid%i2) = restart%v_SSA_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
+      CALL sync
+    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+      ice%u_vav_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_vav_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
+      ice%v_vav_cy( :,grid%i1:grid%i2) = restart%v_vav_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
+      CALL sync
+    END IF
+      
+      !ice%u_vav_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = u_ISMIP_HOM( :,grid%i1:MIN(grid%nx-1,grid%i2))
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)
