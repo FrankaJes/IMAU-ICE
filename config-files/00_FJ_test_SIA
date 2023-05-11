@@ -4,7 +4,7 @@
   ! ====================
   
   start_time_of_run_config                    = 1.0                              ! Start time (in years) of the simulations
-  end_time_of_run_config                      = 2.0                            ! End   time (in years) of the simulations
+  end_time_of_run_config                      = 3.0                            ! End   time (in years) of the simulations
   dt_coupling_config                          = 1.0                           ! Interval of coupling (in years) between the four ice-sheets  
   dt_max_config                               = 1.0                              ! Maximum time step (in years) of the ice model
   dt_thermo_config                            = 1.0                             ! Time step (in years) for updating thermodynamics
@@ -14,7 +14,7 @@
   dt_BMB_config                               = 1.0                             ! Time step (in years) for updating the BMB
   dt_bedrock_ELRA_config                      = 100.0                            ! Time step (in years) for updating the bedrock deformation rate with the ELRA model
   dt_SELEN_config                             = 1000.0                           ! Time step (in years) for calling SELEN
-  dt_output_config                            = 0.1                              ! Time step (in years) for writing output
+  dt_output_config                            = 1.0                              ! Time step (in years) for writing output
   
   ! Benchmark experiments
   ! =====================
@@ -37,6 +37,7 @@
   
   do_write_debug_data_config                  = .FALSE.                          ! Whether or not the debug NetCDF file should be created and written to
   do_check_for_NaN_config                     = .FALSE.                          ! Whether or not fields should be checked for NaN values
+  do_time_display_config                      = .TRUE.
   
   ! Horizontal grid spacing and size for the four regions
   ! =====================================================
@@ -97,7 +98,7 @@
   r_smooth_geometry_config                    = 0.5                              ! Geometry smoothing radius (in number of grid cells)
   
   ! Some parameters for numerically solving the SSA/DIVA
-  DIVA_visc_it_norm_dUV_tol_config            = 1E-2                             ! Successive solutions of UV in the effective viscosity iteration must not differ by more than this amount (on average)
+  DIVA_visc_it_norm_dUV_tol_config            = 1E-0                             ! Successive solutions of UV in the effective viscosity iteration must not differ by more than this amount (on average)
   DIVA_visc_it_nit_config                     = 50                               ! Maximum number of effective viscosity iterations
   DIVA_visc_it_relax_config                   = 0.4                              ! Relaxation parameter for subsequent viscosity iterations (for improved stability)
   DIVA_epsilon_sq_0_config                    = 1E-15                            ! Normalisation term so that zero velocity gives non-zero viscosity

@@ -86,7 +86,6 @@ CONTAINS
 
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_u_SSA_cx_a,         u_SSA_cx_a,          (/1, 1,    ti/))
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_v_SSA_cy_a,         v_SSA_cy_a,          (/1, 1,    ti/))
-      CALL sync
     ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
       u_vav_cx_a            = 0._dp
       u_vav_cx_a(:, 1:nx-1) = region%ice%u_vav_cx
@@ -95,7 +94,6 @@ CONTAINS
 
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_u_vav_cx_a,         u_vav_cx_a,          (/1, 1,    ti/))
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_v_vav_cy_a,         v_vav_cy_a,          (/1, 1,    ti/))
-      CALL sync
     END IF
 
     ! SMB
@@ -1120,8 +1118,8 @@ CONTAINS
     CALL create_double_var( region%restart%netcdf%ncid, region%restart%netcdf%name_var_month,            [         m   ], region%restart%netcdf%id_var_month,            long_name='Month', units='1-12'    )
     CALL create_double_var( region%restart%netcdf%ncid, region%restart%netcdf%name_var_time,             [            t], region%restart%netcdf%id_var_time,             long_name='Time', units='years'   )
 
-  ! ==== Create fields for the different model components =====
-  ! ===========================================================
+    ! ==== Create fields for the different model components =====
+    ! ===========================================================
 
     ! Ice dynamics
     CALL create_double_var( region%restart%netcdf%ncid, region%restart%netcdf%name_var_Hi,               [x, y,       t], region%restart%netcdf%id_var_Hi,               long_name='Ice thickness', units='m')
@@ -1194,8 +1192,8 @@ CONTAINS
       CALL crash('unknown choice_forcing_method "' // TRIM(C%choice_forcing_method) // '"!')
     END IF
 
-  ! ===== End of fields definition =====
-  ! ====================================
+    ! ===== End of fields definition =====
+    ! ====================================
 
     ! Leave definition mode:
     CALL handle_error(nf90_enddef( region%restart%netcdf%ncid))
@@ -1214,8 +1212,8 @@ CONTAINS
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)
-
   END SUBROUTINE create_restart_file
+  
   SUBROUTINE create_help_fields_file( region)
     ! Create a new help fields file, containing secondary model output (not needed for a restart, but interesting to look at)
 
@@ -2676,13 +2674,13 @@ CONTAINS
     CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_SL,               (/ x, y,       t /), restart%netcdf%id_var_SL  )
     CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_dHb,              (/ x, y,       t /), restart%netcdf%id_var_dHb )
 
-    ! IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_SSA_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_SSA_cx_a )
-    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_SSA_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_SSA_cy_a )
-    ! ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_vav_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_vav_cx_a )
-    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_vav_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_vav_cy_a )
-    ! ENDIF
+    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_SSA_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_SSA_cx_a )
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_SSA_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_SSA_cy_a )
+    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_vav_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_vav_cx_a )
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_vav_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_vav_cy_a )
+    ENDIF
 
     ! Close the netcdf file
     CALL close_netcdf_file( restart%netcdf%ncid)

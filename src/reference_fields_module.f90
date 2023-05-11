@@ -308,10 +308,10 @@ CONTAINS
     CALL deallocate_shared( restart%wHs              )
     CALL deallocate_shared( restart%wSL              )
     CALL deallocate_shared( restart%wdHb             )
-    CALL deallocate_shared( restart%wu_SSA_cx_a      )
-    CALL deallocate_shared( restart%wv_SSA_cy_a      )
-    CALL deallocate_shared( restart%wu_vav_cx_a      )
-    CALL deallocate_shared( restart%wv_vav_cy_a      )
+    ! CALL deallocate_shared( restart%wu_SSA_cx_a      )
+    ! CALL deallocate_shared( restart%wv_SSA_cy_a      )
+    ! CALL deallocate_shared( restart%wu_vav_cx_a      )
+    ! CALL deallocate_shared( restart%wv_vav_cy_a      )
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)
@@ -335,10 +335,11 @@ CONTAINS
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'adapt_initial_geometry_from_restart_file'
     INTEGER                                       :: i,j
+    TYPE(type_restart_data)                       :: restart
     REAL(dp), DIMENSION(:,:  ), POINTER           ::  dHb,  SL
     INTEGER                                       :: wdHb, wSL
     REAL(dp)                                      :: Hs, Hs_max_float
-    TYPE(type_restart_data)          :: restart
+    
     
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -431,10 +432,10 @@ CONTAINS
     CALL deallocate_shared( restart%wHs              )
     CALL deallocate_shared( restart%wSL              )
     CALL deallocate_shared( restart%wdHb             )
-    ! CALL deallocate_shared( restart%wu_SSA_cx_a      )
-    ! CALL deallocate_shared( restart%wv_SSA_cy_a      )
-    ! CALL deallocate_shared( restart%wu_vav_cx_a      )
-    ! CALL deallocate_shared( restart%wv_vav_cy_a      )
+    CALL deallocate_shared( restart%wu_SSA_cx_a      )
+    CALL deallocate_shared( restart%wv_SSA_cy_a      )
+    CALL deallocate_shared( restart%wu_vav_cx_a      )
+    CALL deallocate_shared( restart%wv_vav_cy_a      )
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)
