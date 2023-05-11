@@ -1028,18 +1028,23 @@ CONTAINS
       CALL initialise_retreat_mask_refice( grid, ice)
     END IF
 
-    ! Initialise velocity fields with the restart file
-    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-      ice%u_SSA_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_SSA_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
-      ice%v_SSA_cy( :,grid%i1:grid%i2) = restart%v_SSA_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
-      CALL sync
-    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-      ice%u_vav_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_vav_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
-      ice%v_vav_cy( :,grid%i1:grid%i2) = restart%v_vav_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
-      CALL sync
-    END IF
-      
-      !ice%u_vav_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = u_ISMIP_HOM( :,grid%i1:MIN(grid%nx-1,grid%i2))
+
+    ! FJESSE: UNCOMMENT THE LINES BELOW TO RESTART FROM VELOCITIES
+    !IF (C%is_restart) THEN
+      ! ! Initialise velocity fields with the restart file
+      ! IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+      !   ice%u_SSA_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_SSA_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
+      !   ice%v_SSA_cy( :,grid%i1:grid%i2) = restart%v_SSA_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
+      !   CALL sync
+      ! ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+      !   ice%u_vav_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_vav_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
+      !   ice%v_vav_cy( :,grid%i1:grid%i2) = restart%v_vav_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
+      !   CALL sync
+      ! END IF
+    !END IF
+
+    ! FJESSE: OUTPUT VELOCITY FIELD / USE DEBUGFIELD
+
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)

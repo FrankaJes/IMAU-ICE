@@ -182,6 +182,8 @@ CONTAINS
     has_converged         = .FALSE.
     viscosity_iteration: DO WHILE (.NOT. has_converged)
       viscosity_iteration_i = viscosity_iteration_i + 1
+      
+      ! FJESSE: OUTPUT VELOCITY FIELD / USE DEBUGFIELD
 
       ! Calculate the effective viscosity and the product term N = eta * H
       CALL calc_effective_viscosity( grid, ice, ice%u_SSA_cx, ice%v_SSA_cy)

@@ -64,8 +64,6 @@ CONTAINS
     ny   = region%grid%ny
     nz   = C%nZ
     ti   = region%restart%netcdf%ti
-
-
     
     ! Ice dynamics
     CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_Hi,               region%ice%Hi_a,             (/1, 1,    ti/))
@@ -81,25 +79,19 @@ CONTAINS
 
     ! Velocities
     IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-      u_SSA_cx_a = region%ice%Hi_a
+      u_SSA_cx_a            = 0._dp
       u_SSA_cx_a(:, 1:nx-1) = region%ice%u_SSA_cx
-      u_SSA_cx_a(:, nx)     = 0._dp
-
-      v_SSA_cy_a = region%ice%Hi_a
+      v_SSA_cy_a            = 0._dp
       v_SSA_cy_a(1:ny-1, :) = region%ice%v_SSA_cy
-      v_SSA_cy_a(ny, :)     = 0._dp
 
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_u_SSA_cx_a,         u_SSA_cx_a,          (/1, 1,    ti/))
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_v_SSA_cy_a,         v_SSA_cy_a,          (/1, 1,    ti/))
       CALL sync
     ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-      u_vav_cx_a = region%ice%Hi_a
+      u_vav_cx_a            = 0._dp
       u_vav_cx_a(:, 1:nx-1) = region%ice%u_vav_cx
-      u_vav_cx_a(:, nx)     = 0._dp
-
-      v_vav_cy_a = region%ice%Hi_a
+      v_vav_cy_a            = 0._dp
       v_vav_cy_a(1:ny-1, :) = region%ice%v_vav_cy
-      v_vav_cy_a(ny, :)     = 0._dp
 
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_u_vav_cx_a,         u_vav_cx_a,          (/1, 1,    ti/))
       CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_v_vav_cy_a,         v_vav_cy_a,          (/1, 1,    ti/))
@@ -2684,13 +2676,13 @@ CONTAINS
     CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_SL,               (/ x, y,       t /), restart%netcdf%id_var_SL  )
     CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_dHb,              (/ x, y,       t /), restart%netcdf%id_var_dHb )
 
-    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_SSA_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_SSA_cx_a )
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_SSA_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_SSA_cy_a )
-    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_vav_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_vav_cx_a )
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_vav_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_vav_cy_a )
-    ENDIF
+    ! IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_SSA_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_SSA_cx_a )
+    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_SSA_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_SSA_cy_a )
+    ! ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_vav_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_vav_cx_a )
+    !   CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_vav_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_vav_cy_a )
+    ! ENDIF
 
     ! Close the netcdf file
     CALL close_netcdf_file( restart%netcdf%ncid)
@@ -2965,13 +2957,13 @@ CONTAINS
     CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_SL,               restart%SL,               start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
     CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_dHb,              restart%dHb,              start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
 
-    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_SSA_cx_a,     restart%u_SSA_cx_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_SSA_cy_a,     restart%v_SSA_cy_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
-    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_vav_cx_a,     restart%u_vav_cx_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_vav_cy_a,     restart%v_vav_cy_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
-    ENDIF
+    ! IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_SSA_cx_a,     restart%u_SSA_cx_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_SSA_cy_a,     restart%v_SSA_cy_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    ! ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_vav_cx_a,     restart%u_vav_cx_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_vav_cy_a,     restart%v_vav_cy_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    ! ENDIF
 
     ! Close the netcdf file
     CALL close_netcdf_file( restart%netcdf%ncid)

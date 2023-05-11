@@ -105,10 +105,10 @@ MODULE data_types_netcdf_module
     INTEGER :: id_var_v_SSA_cy_a
     INTEGER :: id_var_v_vav_cy_a
 
-    CHARACTER(LEN=256) :: name_var_u_SSA_cx_a                    = 'u_SSA_cx_a            '
-    CHARACTER(LEN=256) :: name_var_u_vav_cx_a                    = 'u_vav_cx_a            '
-    CHARACTER(LEN=256) :: name_var_v_SSA_cy_a                    = 'v_SSA_cy_a            '
-    CHARACTER(LEN=256) :: name_var_v_vav_cy_a                    = 'v_vav_cy_a            '
+    CHARACTER(LEN=256) :: name_var_u_SSA_cx_a               = 'u_SSA_cx_a'
+    CHARACTER(LEN=256) :: name_var_u_vav_cx_a               = 'u_vav_cx_a'
+    CHARACTER(LEN=256) :: name_var_v_SSA_cy_a               = 'v_SSA_cy_a'
+    CHARACTER(LEN=256) :: name_var_v_vav_cy_a               = 'v_vav_cy_a'
 
   END TYPE type_netcdf_restart
   

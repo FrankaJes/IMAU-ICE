@@ -26,7 +26,7 @@ MODULE reference_fields_module
 CONTAINS
 
   ! Initialise all three reference geometries
-  SUBROUTINE initialise_reference_geometries( grid, refgeo_init, refgeo_PD, refgeo_GIAeq, region_name)
+  SUBROUTINE initialise_reference_geometries( grid, refgeo_init, refgeo_PD, refgeo_GIAeq, region_name, restart)
     ! Initialise all three reference geometries
      
     IMPLICIT NONE
@@ -37,6 +37,7 @@ CONTAINS
     TYPE(type_reference_geometry),  INTENT(INOUT) :: refgeo_PD
     TYPE(type_reference_geometry),  INTENT(INOUT) :: refgeo_GIAeq
     CHARACTER(LEN=3),               INTENT(IN)    :: region_name
+    TYPE(type_restart_data),        INTENT(INOUT) :: restart
     
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'initialise_reference_geometries'
@@ -93,7 +94,7 @@ CONTAINS
       CALL initialise_reference_geometry_from_file( grid, refgeo_init, filename_refgeo_init, region_name)
     ELSEIF (choice_refgeo_init == 'restart') THEN
       IF (par%master) WRITE(0,*) '  Initialising initial         reference geometry from restart file ', TRIM( filename_refgeo_init), '...'
-      CALL initialise_reference_geometry_from_restart_file( grid, refgeo_init, filename_refgeo_init, time_to_restart_from)
+      CALL initialise_reference_geometry_from_restart_file( grid, refgeo_init, filename_refgeo_init, time_to_restart_from, restart)
     ELSE
       CALL crash('unknown choice_refgeo_init "' // TRIM( choice_refgeo_init) // '"!')
     END IF
@@ -133,7 +134,7 @@ CONTAINS
       CALL smooth_model_geometry( grid, refgeo_init%Hi,  refgeo_init%Hb,  refgeo_init%Hs )
       CALL smooth_model_geometry( grid, refgeo_GIAeq%Hi, refgeo_GIAeq%Hb, refgeo_GIAeq%Hs)
     END IF
-    
+  
     ! Finalise routine path
     CALL finalise_routine( routine_name)
     
@@ -218,7 +219,7 @@ CONTAINS
   END SUBROUTINE initialise_reference_geometry_from_file
   
   ! Initialise a reference geometry with data from a previous simulation's restart file
-  SUBROUTINE initialise_reference_geometry_from_restart_file( grid, refgeo, filename_refgeo, time_to_restart_from)
+  SUBROUTINE initialise_reference_geometry_from_restart_file( grid, refgeo, filename_refgeo, time_to_restart_from, restart)
     ! Initialise a reference geometry with data from a previous simulation's restart file
      
     IMPLICIT NONE
@@ -228,10 +229,11 @@ CONTAINS
     TYPE(type_reference_geometry),  INTENT(INOUT) :: refgeo
     CHARACTER(LEN=256),             INTENT(IN)    :: filename_refgeo
     REAL(dp),                       INTENT(IN)    :: time_to_restart_from
-    
+    TYPE(type_restart_data),        INTENT(INOUT) :: restart
+
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'initialise_reference_geometry_from_restart_file'
-    TYPE(type_restart_data)                       :: restart
+    !TYPE(type_restart_data)                       :: restart
     
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -257,11 +259,17 @@ CONTAINS
     CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%Hs,               restart%wHs              )
     CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%SL,               restart%wSL              )
     CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%dHb,              restart%wdHb             )
-  
+    
+    ! Velocity stuff needs to move to other place
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%u_SSA_cx_a,       restart%wu_SSA_cx_a      )
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%v_SSA_cy_a,       restart%wv_SSA_cy_a      )
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%u_vav_cx_a,       restart%wu_vav_cx_a      )
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%v_vav_cy_a,       restart%wv_vav_cy_a      )
+
     ! Read data from input file
     IF (par%master) CALL read_restart_file_geometry( restart, time_to_restart_from)
     CALL sync
-    
+
     ! Safety
     CALL check_for_NaN_dp_2D( restart%Hi, 'restart%Hi')
     CALL check_for_NaN_dp_2D( restart%Hb, 'restart%Hb')
@@ -271,7 +279,13 @@ CONTAINS
     CALL transpose_dp_2D( restart%Hi, restart%wHi)
     CALL transpose_dp_2D( restart%Hb, restart%wHb)
     CALL transpose_dp_2D( restart%Hs, restart%wHs)
-    
+
+    ! Velocity stuff needs to move to other place
+    CALL transpose_dp_2D( restart%u_SSA_cx_a, restart%wu_SSA_cx_a)
+    CALL transpose_dp_2D( restart%v_SSA_cy_a, restart%wv_SSA_cy_a)
+    CALL transpose_dp_2D( restart%u_vav_cx_a, restart%wu_vav_cx_a)
+    CALL transpose_dp_2D( restart%v_vav_cy_a, restart%wv_vav_cy_a)
+
     ! Allocate shared memory
     CALL allocate_shared_dp_2D( grid%ny, grid%nx, refgeo%Hi, refgeo%wHi)
     CALL allocate_shared_dp_2D( grid%ny, grid%nx, refgeo%Hb, refgeo%wHb)
@@ -294,10 +308,14 @@ CONTAINS
     CALL deallocate_shared( restart%wHs              )
     CALL deallocate_shared( restart%wSL              )
     CALL deallocate_shared( restart%wdHb             )
-    
+    CALL deallocate_shared( restart%wu_SSA_cx_a      )
+    CALL deallocate_shared( restart%wv_SSA_cy_a      )
+    CALL deallocate_shared( restart%wu_vav_cx_a      )
+    CALL deallocate_shared( restart%wv_vav_cy_a      )
+
     ! Finalise routine path
     CALL finalise_routine( routine_name)
-    
+
   END SUBROUTINE initialise_reference_geometry_from_restart_file
   SUBROUTINE adapt_initial_geometry_from_restart_file( grid, refgeo_PD, refgeo_init, filename_refgeo_init, time_to_restart_from)
     ! Restarting a run can mean the initial bedrock is deformed, which should be accounted for.
@@ -313,13 +331,14 @@ CONTAINS
     CHARACTER(LEN=256),             INTENT(IN)    :: filename_refgeo_init
     REAL(dp),                       INTENT(IN)    :: time_to_restart_from
     
+
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'adapt_initial_geometry_from_restart_file'
     INTEGER                                       :: i,j
-    TYPE(type_restart_data)                       :: restart
     REAL(dp), DIMENSION(:,:  ), POINTER           ::  dHb,  SL
     INTEGER                                       :: wdHb, wSL
     REAL(dp)                                      :: Hs, Hs_max_float
+    TYPE(type_restart_data)          :: restart
     
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -334,7 +353,7 @@ CONTAINS
       CALL inquire_restart_file_geometry( restart)
     END IF
     CALL sync
-    
+
     ! Allocate memory for raw data
     CALL allocate_shared_dp_1D( restart%nx, restart%x,    restart%wx   )
     CALL allocate_shared_dp_1D( restart%ny, restart%y,    restart%wy   )
@@ -345,7 +364,12 @@ CONTAINS
     CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%Hs,               restart%wHs              )
     CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%SL,               restart%wSL              )
     CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%dHb,              restart%wdHb             )
-  
+    
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%u_SSA_cx_a,       restart%wu_SSA_cx_a      )
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%v_SSA_cy_a,       restart%wv_SSA_cy_a      )
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%u_vav_cx_a,       restart%wu_vav_cx_a      )
+    CALL allocate_shared_dp_2D( restart%nx, restart%ny,             restart%v_vav_cy_a,       restart%wv_vav_cy_a      )
+    
     ! Read data from input file
     IF (par%master) CALL read_restart_file_geometry( restart, time_to_restart_from)
     CALL sync
@@ -407,7 +431,11 @@ CONTAINS
     CALL deallocate_shared( restart%wHs              )
     CALL deallocate_shared( restart%wSL              )
     CALL deallocate_shared( restart%wdHb             )
-    
+    ! CALL deallocate_shared( restart%wu_SSA_cx_a      )
+    ! CALL deallocate_shared( restart%wv_SSA_cy_a      )
+    ! CALL deallocate_shared( restart%wu_vav_cx_a      )
+    ! CALL deallocate_shared( restart%wv_vav_cy_a      )
+
     ! Finalise routine path
     CALL finalise_routine( routine_name)
     
