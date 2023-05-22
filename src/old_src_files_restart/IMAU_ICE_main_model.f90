@@ -324,7 +324,7 @@ CONTAINS
     ! ===== Initialise initial, present-day, and GIA equilibrium reference geometries =====
     ! =====================================================================================
 
-    CALL initialise_reference_geometries( region%grid, region%refgeo_init, region%refgeo_PD, region%refgeo_GIAeq, region%name)
+    CALL initialise_reference_geometries( region%grid, region%refgeo_init, region%refgeo_PD, region%refgeo_GIAeq, region%name, region%restart)
 
     ! ===== Define mask where no ice is allowed to form (i.e. Greenland in NAM and EAS, Ellesmere Island in GRL)
     ! ==========================================================================================================

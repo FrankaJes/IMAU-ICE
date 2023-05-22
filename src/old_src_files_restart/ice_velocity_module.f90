@@ -12,15 +12,13 @@ MODULE ice_velocity_module
                                              allocate_shared_int_2D, allocate_shared_dp_2D, &
                                              allocate_shared_int_3D, allocate_shared_dp_3D, &
                                              deallocate_shared, partition_list
-  USE data_types_module,               ONLY: type_model_region, type_grid, type_ice_model, type_restart_data
-  USE netcdf_module,                   ONLY: debug, write_to_debug_file, write_CSR_matrix_to_NetCDF, &
-                                             inquire_restart_file_velocities, read_restart_file_velocities
+  USE data_types_module,               ONLY: type_model_region, type_grid, type_ice_model
+  USE netcdf_module,                   ONLY: debug, write_to_debug_file, write_CSR_matrix_to_NetCDF
   USE utilities_module,                ONLY: check_for_NaN_dp_1D,  check_for_NaN_dp_2D,  check_for_NaN_dp_3D, &
                                              check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
                                              vertical_integration_from_bottom_to_zeta, vertical_average, &
                                              vertical_integrate, SSA_Schoof2006_analytical_solution, initialise_matrix_equation_CSR, &
-                                             solve_matrix_equation_CSR, check_CSR_for_double_entries, is_floating, &
-                                             transpose_dp_2D
+                                             solve_matrix_equation_CSR, check_CSR_for_double_entries, is_floating
   USE derivatives_and_grids_module,    ONLY: ddx_cx_to_b_2D, ddy_cx_to_b_2D, ddy_cy_to_b_2D, ddx_cy_to_b_2D, &
                                              map_cx_to_a_2D, map_cy_to_a_2D, map_cx_to_a_3D, map_cy_to_a_3D, &
                                              map_cx_to_cy_2D, map_cy_to_cx_2D, map_a_to_cx_2D, map_a_to_cy_2D, &
@@ -184,7 +182,7 @@ CONTAINS
     has_converged         = .FALSE.
     viscosity_iteration: DO WHILE (.NOT. has_converged)
       viscosity_iteration_i = viscosity_iteration_i + 1
-
+      
       ! FJESSE: OUTPUT VELOCITY FIELD / USE DEBUGFIELD
 
       ! Calculate the effective viscosity and the product term N = eta * H
@@ -346,13 +344,6 @@ CONTAINS
       ! Check if the viscosity iteration has converged
       CALL calc_visc_iter_UV_resid( grid, ice, ice%u_vav_cx, ice%v_vav_cy, resid_UV)
       !IF (par%master) WRITE(0,*) '   DIVA - viscosity iteration ', viscosity_iteration_i, ': resid_UV = ', resid_UV, ', u = [', MINVAL(ice%u_vav_cx), ' - ', MAXVAL(ice%u_vav_cx), ']'
-
-      ! Print message
-      write(*,"(A,I2,A,F6.4,A,F8.1,A,F8.1,2A,F8.1,A,F8.1,A)") &
-              '          SSA - visc_iter ', viscosity_iteration_i, &
-              ': resid_UV = ', resid_UV, &
-              ', u = [', MINVAL(ice%u_vav_cx), ' - ', MAXVAL(ice%u_vav_cx), ']', &
-              ', v = [', MINVAL(ice%v_vav_cy), ' - ', MAXVAL(ice%v_vav_cy), ']'
 
       has_converged = .FALSE.
       IF     (resid_UV < C%DIVA_visc_it_norm_dUV_tol) THEN
@@ -3037,88 +3028,5 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE initialise_ice_velocity_ISMIP_HOM
-
-  SUBROUTINE initialise_velocities_from_restart_file( grid, ice)
-    ! Initialise velocities with data from a previous simulation's restart file
-
-    IMPLICIT NONE
-
-    ! In/output variables:
-    TYPE(type_grid),                INTENT(IN)    :: grid
-    TYPE(type_ice_model),           INTENT(INOUT) :: ice
-
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'initialise_velocities_from_restart_file'
-    TYPE(type_restart_data)                       :: restart
-
-    ! Add routine to path
-    CALL init_routine( routine_name)
-
-    ! Inquire if all the required fields are present in the specified NetCDF file,
-    ! and determine the dimensions of the memory to be allocated.
-    CALL allocate_shared_int_0D( restart%nx, restart%wnx)
-    CALL allocate_shared_int_0D( restart%ny, restart%wny)
-    CALL allocate_shared_int_0D( restart%nt, restart%wnt)
-    IF (par%master) THEN
-      restart%netcdf%filename = C%filename_refgeo_init_ANT
-      CALL inquire_restart_file_velocities( restart)
-    END IF
-    CALL sync
-
-    ! Allocate memory for raw data
-    CALL allocate_shared_dp_1D( restart%nx, restart%x,    restart%wx   )
-    CALL allocate_shared_dp_1D( restart%ny, restart%y,    restart%wy   )
-    CALL allocate_shared_dp_1D( restart%nt, restart%time, restart%wtime)
-
-    ! Velocity stuff needs to move to other place
-    CALL allocate_shared_dp_2D( restart%nx, restart%ny, restart%u_SSA_cx_a, restart%wu_SSA_cx_a)
-    CALL allocate_shared_dp_2D( restart%nx, restart%ny, restart%v_SSA_cy_a, restart%wv_SSA_cy_a)
-    CALL allocate_shared_dp_2D( restart%nx, restart%ny, restart%u_vav_cx_a, restart%wu_vav_cx_a)
-    CALL allocate_shared_dp_2D( restart%nx, restart%ny, restart%v_vav_cy_a, restart%wv_vav_cy_a)
-
-    ! Read data from input file
-    IF (par%master) CALL read_restart_file_velocities( restart, C%time_to_restart_from_ANT)
-    CALL sync
-
-    ! Safety
-    CALL check_for_NaN_dp_2D( restart%u_SSA_cx_a, 'restart%wu_SSA_cx_a')
-    CALL check_for_NaN_dp_2D( restart%v_SSA_cy_a, 'restart%wv_SSA_cy_a')
-    CALL check_for_NaN_dp_2D( restart%u_vav_cx_a, 'restart%wu_vav_cx_a')
-    CALL check_for_NaN_dp_2D( restart%v_vav_cy_a, 'restart%wv_vav_cy_a')
-
-    ! Since we want data represented as [j,i] internally, transpose the data we just read.
-    CALL transpose_dp_2D( restart%u_SSA_cx_a, restart%wu_SSA_cx_a)
-    CALL transpose_dp_2D( restart%v_SSA_cy_a, restart%wv_SSA_cy_a)
-    CALL transpose_dp_2D( restart%u_vav_cx_a, restart%wu_vav_cx_a)
-    CALL transpose_dp_2D( restart%v_vav_cy_a, restart%wv_vav_cy_a)
-
-    ! Initialise velocity fields with the restart file
-    IF (par%master) THEN
-      IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-        ice%u_SSA_cx( :,1:grid%nx-1) = restart%u_SSA_cx_a( :,1:grid%nx)
-        ice%v_SSA_cy( 1:grid%ny-1,:) = restart%v_SSA_cy_a( 1:grid%ny,:)
-      ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-        ice%u_vav_cx( :,1:grid%nx-1) = restart%u_vav_cx_a( :,1:grid%nx)
-        ice%v_vav_cy( 1:grid%ny-1,:) = restart%v_vav_cy_a( 1:grid%ny,:)
-      END IF
-    END IF
-    CALL sync
-
-    ! Deallocate raw data
-    CALL deallocate_shared( restart%wnx        )
-    CALL deallocate_shared( restart%wny        )
-    CALL deallocate_shared( restart%wnt        )
-    CALL deallocate_shared( restart%wx         )
-    CALL deallocate_shared( restart%wy         )
-    CALL deallocate_shared( restart%wtime      )
-    CALL deallocate_shared( restart%wu_SSA_cx_a)
-    CALL deallocate_shared( restart%wv_SSA_cy_a)
-    CALL deallocate_shared( restart%wu_vav_cx_a)
-    CALL deallocate_shared( restart%wv_vav_cy_a)
-
-    ! Finalise routine path
-    CALL finalise_routine( routine_name)
-
-  END SUBROUTINE initialise_velocities_from_restart_file
 
 END MODULE ice_velocity_module
