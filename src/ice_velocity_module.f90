@@ -3095,11 +3095,11 @@ CONTAINS
     ! Initialise velocity fields with the restart file
     IF (par%master) THEN
       IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-        ice%u_SSA_cx( :,1:grid%nx-1) = restart%u_SSA_cx_a( :,1:grid%nx)
-        ice%v_SSA_cy( 1:grid%ny-1,:) = restart%v_SSA_cy_a( 1:grid%ny,:)
+        ice%u_SSA_cx( :,1:grid%nx-1) = restart%u_SSA_cx_a( :,1:grid%nx-1)
+        ice%v_SSA_cy( 1:grid%ny-1,:) = restart%v_SSA_cy_a( 1:grid%ny-1,:)
       ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-        ice%u_vav_cx( :,1:grid%nx-1) = restart%u_vav_cx_a( :,1:grid%nx)
-        ice%v_vav_cy( 1:grid%ny-1,:) = restart%v_vav_cy_a( 1:grid%ny,:)
+        ice%u_vav_cx( :,1:grid%nx-1) = restart%u_vav_cx_a( :,1:grid%nx-1)
+        ice%v_vav_cy( 1:grid%ny-1,:) = restart%v_vav_cy_a( 1:grid%ny-1,:)
       END IF
     END IF
     CALL sync
