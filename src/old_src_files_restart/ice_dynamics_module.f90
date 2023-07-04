@@ -20,7 +20,7 @@ MODULE ice_dynamics_module
                                                  check_for_NaN_int_1D, check_for_NaN_int_2D, check_for_NaN_int_3D, &
                                                  SSA_Schoof2006_analytical_solution, vertical_average, surface_elevation, is_floating
   USE ice_velocity_module,                 ONLY: initialise_SSADIVA_solution_matrix, solve_SIA, solve_SSA, solve_DIVA, &
-                                                 initialise_ice_velocity_ISMIP_HOM, initialise_velocities_from_restart_file
+                                                 initialise_ice_velocity_ISMIP_HOM
   USE ice_thickness_module,                ONLY: calc_dHi_dt, initialise_implicit_ice_thickness_matrix_tables, apply_ice_thickness_BC, &
                                                  remove_unconnected_shelves
   USE general_ice_model_data_module,       ONLY: update_general_ice_model_data, determine_floating_margin_fraction, determine_masks_ice, &
@@ -1028,9 +1028,23 @@ CONTAINS
       CALL initialise_retreat_mask_refice( grid, ice)
     END IF
 
-    IF (C%do_read_velocities_from_restart) THEN
-      CALL initialise_velocities_from_restart_file( grid, ice)
-    END IF
+
+    ! FJESSE: UNCOMMENT THE LINES BELOW TO RESTART FROM VELOCITIES
+    !IF (C%is_restart) THEN
+      ! ! Initialise velocity fields with the restart file
+      ! IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+      !   ice%u_SSA_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_SSA_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
+      !   ice%v_SSA_cy( :,grid%i1:grid%i2) = restart%v_SSA_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
+      !   CALL sync
+      ! ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+      !   ice%u_vav_cx( :,grid%i1:MIN(grid%nx-1,grid%i2)) = restart%u_vav_cx_a( :,grid%i1:MIN(grid%nx-1,grid%i2))
+      !   ice%v_vav_cy( :,grid%i1:grid%i2) = restart%v_vav_cy_a( 1:grid%ny-1,grid%i1:grid%i2)
+      !   CALL sync
+      ! END IF
+    !END IF
+
+    ! FJESSE: OUTPUT VELOCITY FIELD / USE DEBUGFIELD
+
 
     ! Finalise routine path
     CALL finalise_routine( routine_name)

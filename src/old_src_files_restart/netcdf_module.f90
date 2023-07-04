@@ -64,7 +64,7 @@ CONTAINS
     ny   = region%grid%ny
     nz   = C%nZ
     ti   = region%restart%netcdf%ti
-
+    
     ! Ice dynamics
     CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_Hi,               region%ice%Hi_a,             (/1, 1,    ti/))
     CALL write_data_to_file_dp_2D( ncid, nx, ny,     region%restart%netcdf%id_var_Hb,               region%ice%Hb_a,             (/1, 1,    ti/))
@@ -1213,7 +1213,7 @@ CONTAINS
     ! Finalise routine path
     CALL finalise_routine( routine_name)
   END SUBROUTINE create_restart_file
-
+  
   SUBROUTINE create_help_fields_file( region)
     ! Create a new help fields file, containing secondary model output (not needed for a restart, but interesting to look at)
 
@@ -2674,6 +2674,14 @@ CONTAINS
     CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_SL,               (/ x, y,       t /), restart%netcdf%id_var_SL  )
     CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_dHb,              (/ x, y,       t /), restart%netcdf%id_var_dHb )
 
+    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_SSA_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_SSA_cx_a )
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_SSA_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_SSA_cy_a )
+    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_vav_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_vav_cx_a )
+      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_vav_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_vav_cy_a )
+    ENDIF
+
     ! Close the netcdf file
     CALL close_netcdf_file( restart%netcdf%ncid)
 
@@ -2837,61 +2845,6 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE inquire_restart_file_isotopes
-  SUBROUTINE inquire_restart_file_velocities(    restart)
-    ! Check if the right dimensions and variables are present in the file.
-
-    IMPLICIT NONE
-
-    ! Input variables:
-    TYPE(type_restart_data),        INTENT(INOUT) :: restart
-
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'inquire_restart_file_velocities'
-    INTEGER                                       :: x, y, t
-
-    ! Add routine to path
-    CALL init_routine( routine_name)
-
-    IF (.NOT. par%master) THEN
-      CALL finalise_routine( routine_name)
-      RETURN
-    END IF
-
-    ! Open the netcdf file
-    CALL open_netcdf_file( restart%netcdf%filename, restart%netcdf%ncid)
-
-    ! Inquire dimensions id's. Check that all required dimensions exist, return their lengths.
-    CALL inquire_dim( restart%netcdf%ncid, restart%netcdf%name_dim_x,     restart%nx, restart%netcdf%id_dim_x    )
-    CALL inquire_dim( restart%netcdf%ncid, restart%netcdf%name_dim_y,     restart%ny, restart%netcdf%id_dim_y    )
-    CALL inquire_dim( restart%netcdf%ncid, restart%netcdf%name_dim_time,  restart%nt, restart%netcdf%id_dim_time )
-
-    ! Abbreviations for shorter code
-    x = restart%netcdf%id_dim_x
-    y = restart%netcdf%id_dim_y
-    t = restart%netcdf%id_dim_time
-
-    ! Inquire variable ID's; make sure that each variable has the correct dimensions.
-
-    ! Dimensions
-    CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_x,                (/ x             /), restart%netcdf%id_var_x   )
-    CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_y,                (/    y          /), restart%netcdf%id_var_y   )
-    CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_time,             (/             t /), restart%netcdf%id_var_time)
-
-    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_SSA_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_SSA_cx_a )
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_SSA_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_SSA_cy_a )
-    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_u_vav_cx_a,     (/ x, y,       t /), restart%netcdf%id_var_u_vav_cx_a )
-      CALL inquire_double_var( restart%netcdf%ncid, restart%netcdf%name_var_v_vav_cy_a,     (/ x, y,       t /), restart%netcdf%id_var_v_vav_cy_a )
-    ENDIF
-
-    ! Close the netcdf file
-    CALL close_netcdf_file( restart%netcdf%ncid)
-
-    ! Finalise routine path
-    CALL finalise_routine( routine_name)
-
-  END SUBROUTINE inquire_restart_file_velocities
   SUBROUTINE inquire_BMB_data_file(     BMB_data)
     ! Check if the right dimensions and variables are present in the file.
 
@@ -2918,7 +2871,7 @@ CONTAINS
     ! Inquire dimensions id's. Check that all required dimensions exist, return their lengths.
     CALL inquire_dim( BMB_data%netcdf%ncid, BMB_data%netcdf%name_dim_x,     BMB_data%nx, BMB_data%netcdf%id_dim_x    )
     CALL inquire_dim( BMB_data%netcdf%ncid, BMB_data%netcdf%name_dim_y,     BMB_data%ny, BMB_data%netcdf%id_dim_y    )
-
+    
     ! Abbreviations for shorter code
     x = BMB_data%netcdf%id_dim_x
     y = BMB_data%netcdf%id_dim_y
@@ -2933,13 +2886,13 @@ CONTAINS
 
     ! Close the netcdf file
     CALL close_netcdf_file( BMB_data%netcdf%ncid)
-
+    
     ! Finalise routine path
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE inquire_BMB_data_file
 
-  SUBROUTINE read_restart_file_geometry( restart, time_to_restart_from)
+  SUBROUTINE read_restart_file_geometry(       restart, time_to_restart_from)
     ! Read the restart netcdf file
 
     IMPLICIT NONE
@@ -2996,11 +2949,19 @@ CONTAINS
     END IF
 
     ! Read the data
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_Hi,  restart%Hi,  start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_Hb,  restart%Hb,  start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_Hs,  restart%Hs,  start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_SL,  restart%SL,  start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_dHb, restart%dHb, start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
+    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_Hi,               restart%Hi,               start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_Hb,               restart%Hb,               start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_Hs,               restart%Hs,               start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_SL,               restart%SL,               start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_dHb,              restart%dHb,              start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+
+    ! IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_SSA_cx_a,     restart%u_SSA_cx_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_SSA_cy_a,     restart%v_SSA_cy_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    ! ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_vav_cx_a,     restart%u_vav_cx_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    !   CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_vav_cy_a,     restart%v_vav_cy_a,       start = (/ 1, 1,    ti /), count = (/ restart%nx, restart%ny,             1 /) ))
+    ! ENDIF
 
     ! Close the netcdf file
     CALL close_netcdf_file( restart%netcdf%ncid)
@@ -3009,7 +2970,7 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_restart_file_geometry
-  SUBROUTINE read_restart_file_temperature (restart, time_to_restart_from)
+  SUBROUTINE read_restart_file_temperature(    restart, time_to_restart_from)
     ! Read the restart netcdf file
 
     IMPLICIT NONE
@@ -3087,7 +3048,7 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_restart_file_temperature
-  SUBROUTINE read_restart_file_SMB( restart, time_to_restart_from)
+  SUBROUTINE read_restart_file_SMB(            restart, time_to_restart_from)
     ! Read the restart netcdf file
 
     IMPLICIT NONE
@@ -3154,7 +3115,7 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_restart_file_SMB
-  SUBROUTINE read_restart_file_isotopes( restart, time_to_restart_from)
+  SUBROUTINE read_restart_file_isotopes(       restart, time_to_restart_from)
     ! Read the restart netcdf file
 
     IMPLICIT NONE
@@ -3220,78 +3181,7 @@ CONTAINS
     CALL finalise_routine( routine_name)
 
   END SUBROUTINE read_restart_file_isotopes
-  SUBROUTINE read_restart_file_velocities( restart, time_to_restart_from)
-    ! Read the restart netcdf file
-
-    IMPLICIT NONE
-
-    ! Input variables:
-    TYPE(type_restart_data),        INTENT(INOUT) :: restart
-    REAL(dp),                       INTENT(IN)    :: time_to_restart_from
-
-    ! Local variables:
-    CHARACTER(LEN=256), PARAMETER                 :: routine_name = 'read_restart_file_velocities'
-    INTEGER                                       :: ti, ti_min
-    REAL(dp)                                      :: dt, dt_min
-
-    ! Add routine to path
-    CALL init_routine( routine_name)
-
-    IF (.NOT. par%master) THEN
-      CALL finalise_routine( routine_name)
-      RETURN
-    END IF
-
-    ! Open the netcdf file
-    CALL open_netcdf_file( restart%netcdf%filename, restart%netcdf%ncid)
-
-    ! Read x,y
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_x, restart%x, start=(/1/) ))
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_y, restart%y, start=(/1/) ))
-
-    ! Read time, determine which time frame to read
-    CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_time, restart%time, start=(/1/) ))
-
-    IF (time_to_restart_from < MINVAL(restart%time) .OR. time_to_restart_from > MAXVAL(restart%time)) THEN
-      CALL crash('time_to_restart_from = {dp_01} outside range of restart file!', dp_01 = time_to_restart_from)
-    END IF
-
-    ti_min = 0
-    dt_min = 1E8_dp
-    DO ti = 1, restart%nt
-      dt = ABS(restart%time( ti) - time_to_restart_from)
-      IF (dt < dt_min) THEN
-        ti_min = ti
-        dt_min = dt
-      END IF
-    END DO
-    ti = ti_min
-
-    IF (dt_min > 0._dp) THEN
-      CALL warning('no exact match for time_to_restart_from = {dp_01} yr in restart file! Reading closest match = {dp_02} yr instead.', &
-        dp_01 = time_to_restart_from, dp_02 = restart%time( ti))
-    END IF
-    IF (time_to_restart_from /= C%start_time_of_run) THEN
-      CALL warning('starting run at t = {dp_01} yr with restart data at t = {dp_02} yr!', &
-        dp_01 = C%start_time_of_run, dp_02 = time_to_restart_from)
-    END IF
-
-    IF     (C%choice_ice_dynamics == 'SIA/SSA') THEN
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_SSA_cx_a, restart%u_SSA_cx_a, start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_SSA_cy_a, restart%v_SSA_cy_a, start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-    ELSEIF (C%choice_ice_dynamics == 'DIVA') THEN
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_u_vav_cx_a, restart%u_vav_cx_a, start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-      CALL handle_error(nf90_get_var( restart%netcdf%ncid, restart%netcdf%id_var_v_vav_cy_a, restart%v_vav_cy_a, start = (/ 1, 1, ti /), count = (/ restart%nx, restart%ny, 1 /) ))
-    ENDIF
-
-    ! Close the netcdf file
-    CALL close_netcdf_file( restart%netcdf%ncid)
-
-    ! Finalise routine path
-    CALL finalise_routine( routine_name)
-
-  END SUBROUTINE read_restart_file_velocities
-
+  
   SUBROUTINE read_BMB_data_file(      BMB_data)
     ! Read the BMB netcdf file
 

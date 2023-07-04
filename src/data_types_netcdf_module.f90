@@ -99,6 +99,17 @@ MODULE data_types_netcdf_module
     CHARACTER(LEN=256) :: name_var_dT_glob_inverse_history  = 'dT_glob_inverse_history'
     CHARACTER(LEN=256) :: name_var_CO2_inverse_history      = 'CO2_inverse_history    '
 
+    ! Ice dynamics
+    INTEGER :: id_var_u_SSA_cx_a
+    INTEGER :: id_var_u_vav_cx_a
+    INTEGER :: id_var_v_SSA_cy_a
+    INTEGER :: id_var_v_vav_cy_a
+
+    CHARACTER(LEN=256) :: name_var_u_SSA_cx_a               = 'u_SSA_cx_a'
+    CHARACTER(LEN=256) :: name_var_u_vav_cx_a               = 'u_vav_cx_a'
+    CHARACTER(LEN=256) :: name_var_v_SSA_cy_a               = 'v_SSA_cy_a'
+    CHARACTER(LEN=256) :: name_var_v_vav_cy_a               = 'v_vav_cy_a'
+
   END TYPE type_netcdf_restart
   
   TYPE type_netcdf_BMB_data

@@ -304,8 +304,6 @@ MODULE configuration_module
   REAL(dp)            :: DIVA_PETSc_rtol_config                      = 0.01_dp                          ! DIVA PETSc solver - stop criterion, relative difference (iteration stops if rtol OR abstol is reached)
   REAL(dp)            :: DIVA_PETSc_abstol_config                    = 2.5_dp                           ! DIVA PETSc solver - stop criterion, absolute difference
 
-  LOGICAL             :: do_read_velocities_from_restart_config      = .FALSE.                          ! FJESSE
-
   ! Ice dynamics - time integration
   ! ===============================
 
@@ -995,9 +993,9 @@ MODULE configuration_module
     ! d18O record (ASCII text file, so the number of rows needs to be specified)
     CHARACTER(LEN=256)                  :: filename_d18O_record
     INTEGER                             :: d18O_record_length
-
-    ! Basal melt field from LADDIE
-    CHARACTER(LEN=256)                  :: filename_BMB_laddie
+    
+    ! Basal melt field from LADDIE                
+    CHARACTER(LEN=256)                  :: filename_BMB_laddie 
 
     ! Geothermal heat flux
     CHARACTER(LEN=256)                  :: choice_geothermal_heat_flux
@@ -1052,7 +1050,6 @@ MODULE configuration_module
     REAL(dp)                            :: DIVA_SOR_omega
     REAL(dp)                            :: DIVA_PETSc_rtol
     REAL(dp)                            :: DIVA_PETSc_abstol
-    LOGICAL                             :: do_read_velocities_from_restart
 
     ! Ice dynamics - time integration
     ! ===============================
@@ -1929,7 +1926,6 @@ CONTAINS
                      DIVA_SOR_omega_config,                           &
                      DIVA_PETSc_rtol_config,                          &
                      DIVA_PETSc_abstol_config,                        &
-                     do_read_velocities_from_restart_config,          &
                      choice_timestepping_config,                      &
                      choice_ice_integration_method_config,            &
                      dHi_choice_matrix_solver_config,                 &
@@ -2698,9 +2694,6 @@ CONTAINS
     C%DIVA_SOR_omega                           = DIVA_SOR_omega_config
     C%DIVA_PETSc_rtol                          = DIVA_PETSc_rtol_config
     C%DIVA_PETSc_abstol                        = DIVA_PETSc_abstol_config
-
-    ! FJESSE
-    C%do_read_velocities_from_restart          = do_read_velocities_from_restart_config
 
     ! Ice dynamics - time integration
     ! ===============================
