@@ -54,6 +54,7 @@
   choice_refgeo_init_ANT_config               = 'restart'                        ! Choice of initial geometry for Antarctica   ; can be "idealised", "realistic", or "restart"
   time_to_restart_from_ANT_config             = @RESTART_TIME
   filename_refgeo_init_ANT_config             = '@INPUT_GEOMETRY_IMAU'
+  do_read_velocities_from_restart_config      = @READ_VELOCITIES
 
   ! Present-day geometry
   choice_refgeo_PD_ANT_config                 = 'idealised'                      ! Choice of present-day geometry for Antarctica   ; can be "idealised", "realistic", or "restart"
