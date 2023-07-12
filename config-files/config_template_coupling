@@ -206,7 +206,7 @@
   BMB_Favier2019_lin_GammaT_config            = 3.3314E-05
   filename_BMB_laddie_config   		      = '@MELTFIELD_LADDIE' 		
   choice_BMB_subgrid_config                   = 'FCMP'                           ! Choice of sub-grid BMB scheme: "FCMP", "PMP", "NMP" (following Leguy et al., 2021)
-  do_asynchronous_BMB_config                  = .TRUE.                           ! Whether or not to run the BMB asynchronously from the ice dynamics (if so, run it at dt_BMB; if not, run it in every ice dynamics time step)
+  do_asynchronous_BMB_config                  = .FALSE.                           ! Whether or not to run the BMB asynchronously from the ice dynamics (if so, run it at dt_BMB; if not, run it in every ice dynamics time step)
   
   ! Englacial isotope tracing
   ! =========================
@@ -233,7 +233,7 @@
   help_field_05_config                        = 'u_base'
   help_field_06_config                        = 'v_surf'
   help_field_07_config                        = 'v_base'
-  help_field_08_config                        = 'none'
+  help_field_08_config                        = 'mask'
   help_field_09_config                        = 'none'
   help_field_10_config                        = 'none'
   help_field_11_config                        = 'none'

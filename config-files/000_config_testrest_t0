@@ -4,7 +4,7 @@
   ! ====================
   
   start_time_of_run_config                    = 0.0                              ! Start time (in years) of the simulations
-  end_time_of_run_config                      = 2.0                            ! End   time (in years) of the simulations
+  end_time_of_run_config                      = 0.1                            ! End   time (in years) of the simulations
   dt_coupling_config                          = 1.0                           ! Interval of coupling (in years) between the four ice-sheets  
   dt_max_config                               = 1.0                              ! Maximum time step (in years) of the ice model
   dt_thermo_config                            = 1.0                             ! Time step (in years) for updating thermodynamics
@@ -53,7 +53,7 @@
   ! Initial geometry
   choice_refgeo_init_ANT_config               = 'restart'                        ! Choice of initial geometry for Antarctica   ; can be "idealised", "realistic", or "restart"
   time_to_restart_from_ANT_config             = 50000.0
-  filename_refgeo_init_ANT_config             = 'MISMIPplus/MISMIPplus_tuneGL_2km_Schoof2005_DIVA/restart_ANT.nc'
+  filename_refgeo_init_ANT_config             = 'MISMIPplus_tuneGL_2km_Schoof2005_hybrid/restart_ANT.nc'
   do_read_velocities_from_restart_config      = .FALSE.
 
   ! Present-day geometry
