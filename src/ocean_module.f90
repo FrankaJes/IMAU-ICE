@@ -609,10 +609,9 @@ CONTAINS
     REAL(dp), PARAMETER                                :: Szero     = 34.0_dp    ! Sea surface salinity    [PSU]
     REAL(dp), PARAMETER                                :: depth_tc  = -450._dp    ! Scale depth thermo cline
     REAL(dp), PARAMETER                                :: depth_sc  = 250._dp    ! Scale thickness thermo cline
-    REAL(dp), PARAMETER                                :: alpha       =  7.5E-5_dp     ! Thermal expansion coefficient in EOS              [degC^-1]  = 3.733e-5  # [1/degC]    Thermal expansion coefficient
-    REAL(dp), PARAMETER                                :: beta        =  7.7E-4_dp     ! Salt contraction coefficient in EOS               [PSU^-1]= 7.843e-4  # [1/psu]     Haline contraction coefficient
-    REAL(dp), PARAMETER                                :: rhostar     = 1033_dp        ! Reference density in EOS   = 1028.     # [kg/m^3]    Reference density of seawater 
-
+    REAL(dp), PARAMETER                                :: alpha       = 3.733e-5_dp    ! Thermal expansion coefficient in EOS              [degC^-1] 7.5E-5_dp or  = 3.733e-5  # [1/degC]    Thermal expansion coefficient
+    REAL(dp), PARAMETER                                :: beta        = 7.843e-4_dp     ! Salt contraction coefficient in EOS               [PSU^-1]7.7E-4_dp or = 7.843e-4  # [1/psu]     Haline contraction coefficient
+    REAL(dp), PARAMETER                                :: rhostar     = 1028_dp        ! Reference density in EOS   = 1028.     # [kg/m^3]    Reference density of seawater 
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -666,10 +665,9 @@ CONTAINS
     REAL(dp), PARAMETER                                :: Szero     = 34.0_dp    ! Sea surface salinity    [PSU]
     REAL(dp), PARAMETER                                :: depth_tc  = -450._dp    ! Scale depth thermo cline
     REAL(dp), PARAMETER                                :: depth_sc  = 250._dp    ! Scale thickness thermo cline
-    REAL(dp), PARAMETER                                :: alpha       =  7.5E-5_dp     ! Thermal expansion coefficient in EOS              [degC^-1]  = 3.733e-5  # [1/degC]    Thermal expansion coefficient
-    REAL(dp), PARAMETER                                :: beta        =  7.7E-4_dp     ! Salt contraction coefficient in EOS               [PSU^-1]= 7.843e-4  # [1/psu]     Haline contraction coefficient
-    REAL(dp), PARAMETER                                :: rhostar     = 1033_dp        ! Reference density in EOS   = 1028.     # [kg/m^3]    Reference density of seawater 
-
+    REAL(dp), PARAMETER                                :: alpha       = 3.733e-5_dp    ! Thermal expansion coefficient in EOS              [degC^-1] 7.5E-5_dp or  = 3.733e-5  # [1/degC]    Thermal expansion coefficient
+    REAL(dp), PARAMETER                                :: beta        = 7.843e-4_dp     ! Salt contraction coefficient in EOS               [PSU^-1]7.7E-4_dp or = 7.843e-4  # [1/psu]     Haline contraction coefficient
+    REAL(dp), PARAMETER                                :: rhostar     = 1028_dp        ! Reference density in EOS   = 1028.     # [kg/m^3]    Reference density of seawater 
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -723,10 +721,9 @@ CONTAINS
     REAL(dp), PARAMETER                                :: Szero     = 34.0_dp    ! Sea surface salinity    [PSU]
     REAL(dp), PARAMETER                                :: depth_tc  = -450._dp    ! Scale depth thermo cline
     REAL(dp), PARAMETER                                :: depth_sc  = 250._dp    ! Scale thickness thermo cline
-    REAL(dp), PARAMETER                                :: alpha       =  7.5E-5_dp     ! Thermal expansion coefficient in EOS              [degC^-1]  = 3.733e-5  # [1/degC]    Thermal expansion coefficient
-    REAL(dp), PARAMETER                                :: beta        =  7.7E-4_dp     ! Salt contraction coefficient in EOS               [PSU^-1]= 7.843e-4  # [1/psu]     Haline contraction coefficient
-    REAL(dp), PARAMETER                                :: rhostar     = 1033_dp        ! Reference density in EOS   = 1028.     # [kg/m^3]    Reference density of seawater 
-
+    REAL(dp), PARAMETER                                :: alpha       = 3.733e-5_dp    ! Thermal expansion coefficient in EOS              [degC^-1] 7.5E-5_dp or  = 3.733e-5  # [1/degC]    Thermal expansion coefficient
+    REAL(dp), PARAMETER                                :: beta        = 7.843e-4_dp     ! Salt contraction coefficient in EOS               [PSU^-1]7.7E-4_dp or = 7.843e-4  # [1/psu]     Haline contraction coefficient
+    REAL(dp), PARAMETER                                :: rhostar     = 1028_dp        ! Reference density in EOS   = 1028.     # [kg/m^3]    Reference density of seawater 
 
     ! Add routine to path
     CALL init_routine( routine_name)
@@ -745,15 +742,33 @@ CONTAINS
       ocean%T_ocean_corr_ext( k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
 
       ! Salinity
-      ocean%S_ocean(          k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-      ocean%S_ocean_ext(      k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-      ocean%S_ocean_corr_ext( k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-
+      ocean%S_ocean(          k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)
+      ocean%S_ocean_ext(      k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)
+      ocean%S_ocean_corr_ext( k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)	  
+      
     END DO
     END DO
     END DO
     CALL sync
+	
+	! DENK DROM
+	! debug%dp_3D_01 = 0._dp
+	!debug%dp_3D_02 = 0._dp
+	!debug%dp_2D_01 = 0._dp
+	!debug%dp_2D_01 = C%z_ocean
 
+	!DO i = grid%i1, grid%i2
+    !DO j = 1, grid%ny
+    !DO k = 1, C%nz_ocean
+    !	debug%dp_3D_01(k,j,i) = ocean%T_ocean(k,j,i)
+    ! 	debug%dp_3D_02(k,j,i) = ocean%S_ocean(k,j,i)
+    !END DO
+    !END DO
+    !END DO
+    !CALL sync
+    
+    CALL write_to_debug_file
+    
     ! Finalise routine path
     CALL finalise_routine( routine_name)
 
