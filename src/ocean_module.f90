@@ -601,9 +601,6 @@ CONTAINS
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_ocean_model_idealised_tanh_WARM'
     INTEGER                                            :: i,j,k
-    !REAL(dp)                                           :: w
-    !REAL(dp), PARAMETER                                :: depth_max = 720._dp    ! Maximum depth for the profile (constant values below that)
-
     REAL(dp), PARAMETER                                :: Tzero     = -1.9_dp    ! Sea surface temperature [degC] (originally T0, but that name is already taken...)
     REAL(dp), PARAMETER                                :: Tbot      = -1.9_dp    ! Sea floor   temperature [degC]
     REAL(dp), PARAMETER                                :: Szero     = 34.0_dp    ! Sea surface salinity    [PSU]
@@ -621,18 +618,15 @@ CONTAINS
     DO j = 1, grid%ny
     DO k = 1, C%nz_ocean
 
-      ! Interpolation weight
-      ! w = MIN(1._dp, MAX(0._dp, C%z_ocean( k) / depth_max ))
-
       ! Temperature
       ocean%T_ocean(          k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
       ocean%T_ocean_ext(      k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
       ocean%T_ocean_corr_ext( k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
 
       ! Salinity
-      ocean%S_ocean(          k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-      ocean%S_ocean_ext(      k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-      ocean%S_ocean_corr_ext( k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
+      ocean%S_ocean(          k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)
+      ocean%S_ocean_ext(      k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)
+      ocean%S_ocean_corr_ext( k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)    
 
     END DO
     END DO
@@ -657,9 +651,6 @@ CONTAINS
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_ocean_model_idealised_tanh_WARM'
     INTEGER                                            :: i,j,k
-    !REAL(dp)                                           :: w
-    !REAL(dp), PARAMETER                                :: depth_max = 720._dp    ! Maximum depth for the profile (constant values below that)
-
     REAL(dp), PARAMETER                                :: Tzero     = -1.9_dp    ! Sea surface temperature [degC] (originally T0, but that name is already taken...)
     REAL(dp), PARAMETER                                :: Tbot      =  0.0_dp    ! Sea floor   temperature [degC]
     REAL(dp), PARAMETER                                :: Szero     = 34.0_dp    ! Sea surface salinity    [PSU]
@@ -677,18 +668,15 @@ CONTAINS
     DO j = 1, grid%ny
     DO k = 1, C%nz_ocean
 
-      ! Interpolation weight
-      ! w = MIN(1._dp, MAX(0._dp, C%z_ocean( k) / depth_max ))
-
       ! Temperature
       ocean%T_ocean(          k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
       ocean%T_ocean_ext(      k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
       ocean%T_ocean_corr_ext( k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
 
       ! Salinity
-      ocean%S_ocean(          k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-      ocean%S_ocean_ext(      k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
-      ocean%S_ocean_corr_ext( k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%nz_ocean)**.5/(beta*rhostar)
+      ocean%S_ocean(          k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)
+      ocean%S_ocean_ext(      k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)
+      ocean%S_ocean_corr_ext( k,j,i) = Szero + alpha*(ocean%T_ocean(k,j,i)-Tzero)/beta + .01*ABS(C%z_ocean( k))**.5/(beta*rhostar)    
 
     END DO
     END DO
@@ -713,9 +701,6 @@ CONTAINS
     ! Local variables:
     CHARACTER(LEN=256), PARAMETER                      :: routine_name = 'run_ocean_model_idealised_tanh_WARM'
     INTEGER                                            :: i,j,k
-    !REAL(dp)                                           :: w
-    !REAL(dp), PARAMETER                                :: depth_max = 720._dp    ! Maximum depth for the profile (constant values below that)
-
     REAL(dp), PARAMETER                                :: Tzero     = -1.9_dp    ! Sea surface temperature [degC] (originally T0, but that name is already taken...)
     REAL(dp), PARAMETER                                :: Tbot      =  1.5_dp    ! Sea floor   temperature [degC]
     REAL(dp), PARAMETER                                :: Szero     = 34.0_dp    ! Sea surface salinity    [PSU]
@@ -733,9 +718,6 @@ CONTAINS
     DO j = 1, grid%ny
     DO k = 1, C%nz_ocean
 
-      ! Interpolation weight
-      ! w = MIN(1._dp, MAX(0._dp, C%z_ocean( k) / depth_max ))
-
       ! Temperature
       ocean%T_ocean(          k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
       ocean%T_ocean_ext(      k,j,i) = Tbot + (Tzero - Tbot) * (1+tanh((-C%z_ocean( k)-depth_tc)/depth_sc))/2
@@ -750,25 +732,7 @@ CONTAINS
     END DO
     END DO
     CALL sync
-	
-	! DENK DROM
-	! debug%dp_3D_01 = 0._dp
-	!debug%dp_3D_02 = 0._dp
-	!debug%dp_2D_01 = 0._dp
-	!debug%dp_2D_01 = C%z_ocean
 
-	!DO i = grid%i1, grid%i2
-    !DO j = 1, grid%ny
-    !DO k = 1, C%nz_ocean
-    !	debug%dp_3D_01(k,j,i) = ocean%T_ocean(k,j,i)
-    ! 	debug%dp_3D_02(k,j,i) = ocean%S_ocean(k,j,i)
-    !END DO
-    !END DO
-    !END DO
-    !CALL sync
-    
-    CALL write_to_debug_file
-    
     ! Finalise routine path
     CALL finalise_routine( routine_name)
 
